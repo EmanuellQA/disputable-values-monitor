@@ -13,7 +13,7 @@ from twilio.base.exceptions import TwilioException
 from web3 import Web3
 from web3.datastructures import AttributeDict
 
-from tellor_disputables.alerts import get_twilio_client
+from fetch_disputables.alerts import get_twilio_client
 
 load_dotenv()
 
@@ -113,15 +113,15 @@ def check_twilio_configured() -> None:
 @pytest.fixture
 def setup():
     """Setup contracts and fork mainnet for testing"""
-    token_contract_info = contract_directory.find(name="trb-token", chain_id=1)[0]
-    governance_contract_info = contract_directory.find(name="tellor-governance", chain_id=1)[0]
-    oracle_contract_info = contract_directory.find(name="tellor360-oracle", chain_id=1)[0]
-    autopay_contract_info = contract_directory.find(name="tellor360-autopay", chain_id=1)[0]
+    token_contract_info = contract_directory.find(name="fetch-token", chain_id=1)[0]
+    governance_contract_info = contract_directory.find(name="fetch-governance", chain_id=1)[0]
+    oracle_contract_info = contract_directory.find(name="fetchflex-oracle", chain_id=1)[0]
+    autopay_contract_info = contract_directory.find(name="fetch360-autopay", chain_id=1)[0]
 
-    contract_directory.entries["tellor360-oracle"].address[1337] = oracle_contract_info.address[1]
-    contract_directory.entries["trb-token"].address[1337] = token_contract_info.address[1]
-    contract_directory.entries["tellor360-autopay"].address[1337] = autopay_contract_info.address[1]
-    contract_directory.entries["tellor-governance"].address[1337] = governance_contract_info.address[1]
+    contract_directory.entries["fetchflex-oracle"].address[1337] = oracle_contract_info.address[1]
+    contract_directory.entries["fetch-token"].address[1337] = token_contract_info.address[1]
+    contract_directory.entries["fetch360-autopay"].address[1337] = autopay_contract_info.address[1]
+    contract_directory.entries["fetch-governance"].address[1337] = governance_contract_info.address[1]
 
     cfg = TelliotConfig()
     cfg.main.chain_id = 1337
@@ -136,7 +136,7 @@ def setup():
     token = w3.eth.contract(address=token_contract_info.address[1], abi=token_contract_info.get_abi(1))
     transfer = token.get_function_by_name("transfer")
     multisig_address = "0x39E419bA25196794B595B2a595Ea8E527ddC9856"
-    # transfer 100 TRB to the disputer account
+    # transfer 100 FETCH to the disputer account
     token_txn = transfer("0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1", int(100e18)).buildTransaction(
         {
             "gas": 500000,

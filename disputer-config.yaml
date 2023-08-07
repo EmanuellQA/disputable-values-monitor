@@ -1,9 +1,9 @@
 # AutoDisputer configuration file
-feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
-  - query_id: "0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992"
+feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
+  - query_id: "0x83245f6a6a2f6458558a706270fbcc35ac3a81917602c1313d3bfa998dcc2d4b"
     threshold:
       type: Percentage
-      amount: 0.75 # 75%
+      amount: 0.1 # 75%
   - query_type: EVMCall
     threshold:
       type: Equality

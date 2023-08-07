@@ -25,7 +25,7 @@ def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
 
 @dataclass
 class Topics:
-    """Topics for Tellor events."""
+    """Topics for Fetch events."""
 
     # sha3("NewReport(bytes32,uint256,uint256,uint256,uint256)")
     NEW_REPORT: str = "0x48e9e2c732ba278de6ac88a3a57a5c5ba13d3d8370e709b3b98333a57876ca95"  # oracle.NewReport

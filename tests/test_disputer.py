@@ -10,15 +10,15 @@ from telliot_core.model.endpoints import RPCEndpoint
 from telliot_core.utils.response import ResponseStatus
 from telliot_feeds.feeds.eth_usd_feed import eth_usd_median_feed
 
-from tellor_disputables import EXAMPLE_NEW_REPORT_EVENT_TX_RECEIPT
-from tellor_disputables.config import AutoDisputerConfig
-from tellor_disputables.data import Metrics
-from tellor_disputables.data import MonitoredFeed
-from tellor_disputables.data import parse_new_report_event
-from tellor_disputables.data import Threshold
-from tellor_disputables.disputer import dispute
-from tellor_disputables.disputer import get_dispute_fee
-from tellor_disputables.utils import NewReport
+from fetch_disputables import EXAMPLE_NEW_REPORT_EVENT_TX_RECEIPT
+from fetch_disputables.config import AutoDisputerConfig
+from fetch_disputables.data import Metrics
+from fetch_disputables.data import MonitoredFeed
+from fetch_disputables.data import parse_new_report_event
+from fetch_disputables.data import Threshold
+from fetch_disputables.disputer import dispute
+from fetch_disputables.disputer import get_dispute_fee
+from fetch_disputables.utils import NewReport
 
 
 @pytest.mark.asyncio
@@ -27,7 +27,7 @@ async def test_not_meant_to_dispute(caplog, disputer_account):
 
     report = NewReport(
         "0xabc123",
-        1679425719,  # this eth block does not have a tellor value on the eth/usd query id
+        1679425719,  # this eth block does not have a fetch value on the eth/usd query id
         1337,
         "etherscan.io/",
         "SpotPrice",
@@ -63,7 +63,7 @@ async def test_dispute_on_empty_block(setup, caplog: pytest.LogCaptureFixture, d
 
     report = NewReport(
         "0xabc123",
-        1679425719,  # this eth block does not have a tellor value on the eth/usd query id
+        1679425719,  # this eth block does not have a fetch value on the eth/usd query id
         1337,
         "etherscan.io/",
         "SpotPrice",
@@ -190,7 +190,7 @@ async def test_dispute_using_sample_log(
     cfg.endpoints.endpoints.append(endpoint)
 
     with mock.patch(
-        "tellor_disputables.data.general_fetch_new_datapoint", return_value=(mock_telliot_val, int(time.time()))
+        "fetch_disputables.data.general_fetch_new_datapoint", return_value=(mock_telliot_val, int(time.time()))
     ):
         new_report = await parse_new_report_event(
             cfg, eth_usd_report_log, monitored_feeds=monitored_feeds, confidence_threshold=0.1

@@ -7,8 +7,8 @@ from typing import Tuple
 import click
 from twilio.rest import Client
 
-from tellor_disputables import ALWAYS_ALERT_QUERY_TYPES
-from tellor_disputables.data import NewReport
+from fetch_disputables import ALWAYS_ALERT_QUERY_TYPES
+from fetch_disputables.data import NewReport
 
 
 def generic_alert(recipients: List[str], from_number: str, msg: str) -> None:

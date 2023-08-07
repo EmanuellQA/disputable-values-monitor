@@ -6,9 +6,9 @@ from telliot_feeds.dtypes.datapoint import datetime_now_utc
 from telliot_feeds.feeds import mimicry_nft_market_index_usd_feed
 from web3 import Web3
 
-from tellor_disputables.config import AutoDisputerConfig
-from tellor_disputables.data import get_contract
-from tellor_disputables.data import parse_new_report_event
+from fetch_disputables.config import AutoDisputerConfig
+from fetch_disputables.data import get_contract
+from fetch_disputables.data import parse_new_report_event
 
 
 def increase_time(w3, seconds):
@@ -36,14 +36,14 @@ async def test_disputability_mimicry_nft_index_type(setup, disputer_account):
     endpoint.connect()
     w3 = endpoint.web3
     snapshot_id = take_snapshot(w3)
-    oracle = get_contract(cfg, name="tellor360-oracle", account=disputer_account)
-    token = get_contract(cfg, name="trb-token", account=disputer_account)
+    oracle = get_contract(cfg, name="fetchflex-oracle", account=disputer_account)
+    token = get_contract(cfg, name="fetch-token", account=disputer_account)
 
     # fake val to avoid hitting api since api requires key
     val = 11287512.476225
     value = mimicry_nft_market_index_usd_feed.query.value_type.encode(val)
     wallet = Web3.toChecksumAddress("0x39e419ba25196794b595b2a595ea8e527ddc9856")
-    tellorflex = w3.eth.contract(address=oracle.address, abi=oracle.abi)
+    fetchflex = w3.eth.contract(address=oracle.address, abi=oracle.abi)
     token = w3.eth.contract(address=token.address, abi=token.abi)
     approve_txn = token.functions.approve(spender=oracle.address, amount=int(5000e18)).buildTransaction(
         {"gas": 350000, "gasPrice": w3.eth.gas_price, "nonce": w3.eth.get_transaction_count(wallet), "from": wallet}
@@ -51,13 +51,13 @@ async def test_disputability_mimicry_nft_index_type(setup, disputer_account):
     approve_hash = w3.eth.send_transaction(approve_txn)
     assert approve_hash
 
-    deposit_txn = tellorflex.functions.depositStake(_amount=int(5000e18)).buildTransaction(
+    deposit_txn = fetchflex.functions.depositStake(_amount=int(5000e18)).buildTransaction(
         {"gas": 350000, "gasPrice": w3.eth.gas_price, "nonce": w3.eth.get_transaction_count(wallet), "from": wallet}
     )
     deposit_hash = w3.eth.send_transaction(deposit_txn)
     assert deposit_hash
 
-    first_submit_txn = tellorflex.functions.submitValue(
+    first_submit_txn = fetchflex.functions.submitValue(
         _queryId=mimicry_nft_market_index_usd_feed.query.query_id,
         _value=value,
         _nonce=0,
@@ -73,7 +73,7 @@ async def test_disputability_mimicry_nft_index_type(setup, disputer_account):
     increase_time(w3, 86400)
     bad_value = val + (val * 0.9)
     bad_val_encoded = mimicry_nft_market_index_usd_feed.query.value_type.encode(bad_value)
-    second_submit_txn = tellorflex.functions.submitValue(
+    second_submit_txn = fetchflex.functions.submitValue(
         _queryId=mimicry_nft_market_index_usd_feed.query.query_id,
         _value=bad_val_encoded,
         _nonce=0,
