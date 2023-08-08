@@ -5,11 +5,11 @@ from unittest import mock
 
 from twilio.rest import Client
 
-from tellor_disputables.alerts import alert
-from tellor_disputables.alerts import generate_alert_msg
-from tellor_disputables.alerts import get_twilio_client
-from tellor_disputables.alerts import get_twilio_info
-from tellor_disputables.data import NewReport
+from fetch_disputables.alerts import alert
+from fetch_disputables.alerts import generate_alert_msg
+from fetch_disputables.alerts import get_twilio_client
+from fetch_disputables.alerts import get_twilio_info
+from fetch_disputables.data import NewReport
 
 
 def test_notify_typical_disputable(capsys):
@@ -18,7 +18,7 @@ def test_notify_typical_disputable(capsys):
     def first_alert():
         print("alert sent")
 
-    with (mock.patch("tellor_disputables.alerts.send_text_msg", side_effect=[first_alert()])):
+    with (mock.patch("fetch_disputables.alerts.send_text_msg", side_effect=[first_alert()])):
         r = NewReport(
             "0xabc123",
             time.time(),
@@ -74,7 +74,7 @@ def test_notify_non_disputable(capsys):
     def second_alert():
         print("second alert sent")
 
-    with (mock.patch("tellor_disputables.alerts.send_text_msg", side_effect=[first_alert(), second_alert()])):
+    with (mock.patch("fetch_disputables.alerts.send_text_msg", side_effect=[first_alert(), second_alert()])):
         r = NewReport(
             "0xabc123",
             time.time(),
@@ -82,7 +82,7 @@ def test_notify_non_disputable(capsys):
             "etherscan.io/abc",
             "query type",
             15.5,
-            "trb",
+            "fetch",
             "usd",
             "query id",
             None,
@@ -107,14 +107,14 @@ def test_notify_always_alertable_value(capsys):
     def second_alert():
         print("second alert sent")
 
-    with (mock.patch("tellor_disputables.alerts.send_text_msg", side_effect=[first_alert(), second_alert()])):
+    with (mock.patch("fetch_disputables.alerts.send_text_msg", side_effect=[first_alert(), second_alert()])):
         r = NewReport(
             "0xabc123",
             time.time(),
             1,
             "etherscan.io/abc",
-            "TellorOracleAddress",
-            "0xabcNewTellorAddress",
+            "FetchOracleAddress",
+            "0xabcNewFetchAddress",
             None,
             None,
             "query id",

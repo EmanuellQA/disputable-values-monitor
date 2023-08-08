@@ -6,13 +6,13 @@ from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
 
-from src.tellor_disputables import EXAMPLE_NEW_REPORT_EVENT
-from src.tellor_disputables import EXAMPLE_NEW_REPORT_EVENT_TX_RECEIPT
-from src.tellor_disputables.utils import are_all_attributes_none
-from src.tellor_disputables.utils import disputable_str
-from src.tellor_disputables.utils import get_logger
-from src.tellor_disputables.utils import get_tx_explorer_url
-from src.tellor_disputables.utils import select_account
+from src.fetch_disputables import EXAMPLE_NEW_REPORT_EVENT
+from src.fetch_disputables import EXAMPLE_NEW_REPORT_EVENT_TX_RECEIPT
+from src.fetch_disputables.utils import are_all_attributes_none
+from src.fetch_disputables.utils import disputable_str
+from src.fetch_disputables.utils import get_logger
+from src.fetch_disputables.utils import get_tx_explorer_url
+from src.fetch_disputables.utils import select_account
 
 
 def test_get_tx_explorer_url():

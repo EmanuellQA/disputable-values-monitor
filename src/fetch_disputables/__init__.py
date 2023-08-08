@@ -1,11 +1,11 @@
-"""Tellor Disputables - CLI dashboard & alerts for potential
-bad values reported to Tellor oracles."""
+"""Fetch Disputables - CLI dashboard & alerts for potential
+bad values reported to Fetch oracles."""
 from hexbytes import HexBytes
 from web3.datastructures import AttributeDict
 
 WAIT_PERIOD = 7  # seconds between checks for new events
 
-ALWAYS_ALERT_QUERY_TYPES = ("AutopayAddresses", "TellorOracleAddress")
+ALWAYS_ALERT_QUERY_TYPES = ("AutopayAddresses", "FetchOracleAddress")
 
 
 # https://goerli.etherscan.io/tx/0x3cb2ac6017b9c2282aba271ac658c55db428edcdd391df646a1928bbe28dd9bd
@@ -77,7 +77,7 @@ LEGACY_ASSETS = {
     1: "ETH",
     2: "BTC",
     10: "AMPL",
-    50: "TRB",
+    50: "FETCH",
     59: "ETH",
 }
 

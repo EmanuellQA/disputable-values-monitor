@@ -17,8 +17,8 @@ from telliot_feeds.feeds import evm_call_feed_example
 from telliot_feeds.queries.price.spot_price import SpotPrice
 from web3 import Web3
 
-from tellor_disputables import data
-from tellor_disputables.cli import start
+from fetch_disputables import data
+from fetch_disputables.cli import start
 
 # during testing there aren't that many blocks so setting offset to 0
 data.inital_block_offset = 0
@@ -75,8 +75,8 @@ async def environment_setup(setup: TelliotConfig, disputer_account: ChainedAccou
     w3 = node._web3
     increase_time_and_mine_blocks(w3, 600, 20)
     async with TelliotCore(config=config) as core:
-        contracts = core.get_tellor360_contracts()
-        # transfer trb to disputer account for disputing
+        contracts = core.get_fetch360_contracts()
+        # transfer fetch to disputer account for disputing
         transfer_function = contracts.token.contract.get_function_by_name("transfer")
         transfer_txn = transfer_function(w3.toChecksumAddress(disputer_account.address), int(100e18)).buildTransaction(
             txn_kwargs(w3)
@@ -90,13 +90,13 @@ async def environment_setup(setup: TelliotConfig, disputer_account: ChainedAccou
 @pytest.fixture(scope="function")
 async def stake_deposited(environment_setup: TelliotCore):
     core = await environment_setup
-    contracts = core.get_tellor360_contracts()
+    contracts = core.get_fetch360_contracts()
     w3 = core.endpoint._web3
     oracle = contracts.oracle
     token = contracts.token
     approve = token.contract.get_function_by_name("approve")
     deposit = oracle.contract.get_function_by_name("depositStake")
-    # approve oracle to spend trb for submitting values
+    # approve oracle to spend fetch for submitting values
     approve_txn = approve(oracle.address, int(10000e18)).buildTransaction(txn_kwargs(w3))
     approve_hash = w3.eth.send_transaction(approve_txn)
     reciept = w3.eth.wait_for_transaction_receipt(approve_hash)
@@ -112,7 +112,7 @@ async def stake_deposited(environment_setup: TelliotCore):
 @pytest.fixture(scope="function")
 async def submit_multiple_bad_values(stake_deposited: Awaitable[TelliotCore]):
     core = await stake_deposited
-    contracts = core.get_tellor360_contracts()
+    contracts = core.get_fetch360_contracts()
     w3 = core.endpoint._web3
     oracle = contracts.oracle
     submit_value = oracle.contract.get_function_by_name("submitValue")
@@ -161,8 +161,8 @@ async def setup_and_start(is_disputing, config, config_patches=None):
     # using exit stack makes nested patching easier to read
     with ExitStack() as stack:
         stack.enter_context(patch("getpass.getpass", return_value=""))
-        stack.enter_context(patch("tellor_disputables.alerts.send_text_msg", side_effect=print("alert sent")))
-        stack.enter_context(patch("tellor_disputables.cli.TelliotConfig", new=lambda: config))
+        stack.enter_context(patch("fetch_disputables.alerts.send_text_msg", side_effect=print("alert sent")))
+        stack.enter_context(patch("fetch_disputables.cli.TelliotConfig", new=lambda: config))
         stack.enter_context(patch("telliot_feeds.feeds.evm_call_feed.source.cfg", config))
 
         if config_patches is not None:
@@ -181,7 +181,7 @@ async def test_default_config(submit_multiple_bad_values: Awaitable[TelliotCore]
     """Test that the default config works as expected"""
     core = await submit_multiple_bad_values
     config = core.config
-    oracle = core.get_tellor360_contracts().oracle
+    oracle = core.get_fetch360_contracts().oracle
     w3 = core.endpoint._web3
     chain_timestamp = w3.eth.get_block("latest")["timestamp"]
 
@@ -202,7 +202,7 @@ async def test_custom_btc_config(submit_multiple_bad_values: Awaitable[TelliotCo
     """Test that a custom btc config works as expected"""
     core = await submit_multiple_bad_values
     config = core.config
-    oracle = core.get_tellor360_contracts().oracle
+    oracle = core.get_fetch360_contracts().oracle
     w3 = core.endpoint._web3
     chain_timestamp = w3.eth.get_block("latest")["timestamp"]
 
@@ -228,7 +228,7 @@ async def test_custom_eth_btc_config(submit_multiple_bad_values: Awaitable[Telli
     """Test that eth and btc in dispute config"""
     core = await submit_multiple_bad_values
     config = core.config
-    oracle = core.get_tellor360_contracts().oracle
+    oracle = core.get_fetch360_contracts().oracle
     w3 = core.endpoint._web3
     chain_timestamp = w3.eth.get_block("latest")["timestamp"]
 
@@ -261,7 +261,7 @@ async def test_get_source_from_data(submit_multiple_bad_values: Awaitable[Tellio
     config = core.config
 
     config_patches = [
-        patch("tellor_disputables.data.get_source_from_data", side_effect=lambda _: None),
+        patch("fetch_disputables.data.get_source_from_data", side_effect=lambda _: None),
     ]
     await setup_and_start(True, config, config_patches)
     assert "Unable to form source from queryData of query type EVMCall" in caplog.text
@@ -291,7 +291,7 @@ async def test_evm_type_alert(submit_multiple_bad_values: Awaitable[TelliotCore]
 @pytest.mark.asyncio
 async def test_custom_spot_type(stake_deposited: Awaitable[TelliotCore]):
     core = await stake_deposited
-    contracts = core.get_tellor360_contracts()
+    contracts = core.get_fetch360_contracts()
     w3 = core.endpoint._web3
     oracle = contracts.oracle
     config = core.config
@@ -319,7 +319,7 @@ async def test_custom_spot_type(stake_deposited: Awaitable[TelliotCore]):
 @pytest.mark.asyncio
 async def test_gas_oracle_type(stake_deposited: Awaitable[TelliotCore]):
     core = await stake_deposited
-    contracts = core.get_tellor360_contracts()
+    contracts = core.get_fetch360_contracts()
     w3 = core.endpoint._web3
     oracle = contracts.oracle
     config = core.config

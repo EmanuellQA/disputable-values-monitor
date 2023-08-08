@@ -3,17 +3,17 @@ from unittest import mock
 
 from telliot_feeds.feeds import evm_call_feed
 
-from tellor_disputables.config import AutoDisputerConfig
-from tellor_disputables.data import Metrics
-from tellor_disputables.data import MonitoredFeed
-from tellor_disputables.data import Threshold
+from fetch_disputables.config import AutoDisputerConfig
+from fetch_disputables.data import Metrics
+from fetch_disputables.data import MonitoredFeed
+from fetch_disputables.data import Threshold
 
 
 def test_build_single_feed_from_yaml():
     """test building an AutoDisputerConfig from a yaml file describing a single MonitoredFeed"""
 
     yaml_content = """
-    feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types
+    feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types
     - query_id: "0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992"
       threshold:
         type: Percentage
@@ -34,7 +34,7 @@ def test_build_multiple_feeds_from_yaml():
     """test building an AutoDisputerConfig from a yaml file describing multiple MonitoredFeeds"""
 
     yaml_content = """
-    feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types
+    feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types
     - query_id: "0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992"
       threshold:
         type: Percentage
@@ -61,7 +61,7 @@ def test_invalid_yaml_config():
     """test that an invalid yaml file does not become an AutoDisputerConfig object"""
 
     yaml_content = """
-    feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types
+    feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types
     - query_id: "0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992"
       threshold:
         type: Percentage
@@ -82,7 +82,7 @@ def test_form_evm_call_feed_from_yaml():
     """test building EVMCall source without parameters from config"""
 
     yaml_content = """
-    feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types
+    feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types
     - query_type: "EVMCall"
       threshold:
         type: Equality

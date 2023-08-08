@@ -1,4 +1,4 @@
-"""CLI dashboard to display recent values reported to Tellor oracles."""
+"""CLI dashboard to display recent values reported to Fetch oracles."""
 import logging
 import warnings
 from time import sleep
@@ -10,22 +10,22 @@ from hexbytes import HexBytes
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_core.cli.utils import async_run
 
-from tellor_disputables import WAIT_PERIOD
-from tellor_disputables.alerts import alert
-from tellor_disputables.alerts import dispute_alert
-from tellor_disputables.alerts import generic_alert
-from tellor_disputables.alerts import get_twilio_info
-from tellor_disputables.config import AutoDisputerConfig
-from tellor_disputables.data import chain_events
-from tellor_disputables.data import get_events
-from tellor_disputables.data import parse_new_report_event
-from tellor_disputables.disputer import dispute
-from tellor_disputables.utils import clear_console
-from tellor_disputables.utils import format_values
-from tellor_disputables.utils import get_logger
-from tellor_disputables.utils import get_tx_explorer_url
-from tellor_disputables.utils import select_account
-from tellor_disputables.utils import Topics
+from fetch_disputables import WAIT_PERIOD
+from fetch_disputables.alerts import alert
+from fetch_disputables.alerts import dispute_alert
+from fetch_disputables.alerts import generic_alert
+from fetch_disputables.alerts import get_twilio_info
+from fetch_disputables.config import AutoDisputerConfig
+from fetch_disputables.data import chain_events
+from fetch_disputables.data import get_events
+from fetch_disputables.data import parse_new_report_event
+from fetch_disputables.disputer import dispute
+from fetch_disputables.utils import clear_console
+from fetch_disputables.utils import format_values
+from fetch_disputables.utils import get_logger
+from fetch_disputables.utils import get_tx_explorer_url
+from fetch_disputables.utils import select_account
+from fetch_disputables.utils import Topics
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -57,7 +57,7 @@ def print_title_info() -> None:
 )
 @async_run
 async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float) -> None:
-    """CLI dashboard to display recent values reported to Tellor oracles."""
+    """CLI dashboard to display recent values reported to Fetch oracles."""
     await start(
         all_values=all_values,
         wait=wait,
@@ -72,7 +72,7 @@ async def start(
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
-    cfg.main.chain_id = 1
+    cfg.main.chain_id = 943
     disp_cfg = AutoDisputerConfig()
     print_title_info()
 
@@ -99,15 +99,15 @@ async def start(
         # Fetch NewReport events
         event_lists = await get_events(
             cfg=cfg,
-            contract_name="tellor360-oracle",
+            contract_name="fetch360-oracle",
             topics=[Topics.NEW_REPORT],
         )
-        tellor_flex_report_events = await get_events(
+        fetch_flex_report_events = await get_events(
             cfg=cfg,
-            contract_name="tellorflex-oracle",
+            contract_name="fetchflex-oracle",
             topics=[Topics.NEW_REPORT],
         )
-        tellor360_events = await chain_events(
+        fetch360_events = await chain_events(
             cfg=cfg,
             # addresses are for token contract
             chain_addy={
@@ -116,7 +116,7 @@ async def start(
             },
             topics=[[Topics.NEW_ORACLE_ADDRESS], [Topics.NEW_PROPOSED_ORACLE_ADDRESS]],
         )
-        event_lists += tellor360_events + tellor_flex_report_events
+        event_lists += fetch360_events + fetch_flex_report_events
         for event_list in event_lists:
             # event_list = [(80001, EXAMPLE_NEW_REPORT_EVENT)]
             if not event_list:

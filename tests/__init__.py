@@ -1,1 +1,1 @@
-"""Unit tests for Tellor Disputables package."""
+"""Unit tests for Fetch Disputables package."""
