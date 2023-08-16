@@ -11,7 +11,7 @@ Fetch is an active oracle protocol on Ethereum that allows users to accept off-c
 ```bash!
 python3.9 -m venv venv  # incompatible with python 3.10
 source venv/bin/activate
-pip install fetch-disputables
+./install.sh
 mv venv/lib/python3.9/site-packages/vars.example.sh vars.sh
 mv venv/lib/python3.9/site-packages/disputer-config.yaml disputer-config.yaml
 chained add <name of new account> <private key> <chain id(s) separated by spaces>
@@ -23,7 +23,6 @@ cli -d  # the d is for dispute!
 
 ### Prerequisites:
 - Install Python 3.9
-- Install [Poetry](https://github.com/python-poetry/poetry)
 - Create an account on [twilio](https://www.twilio.com/docs/sms/quickstart/python)
 
 ### Update environment variables:
@@ -42,7 +41,7 @@ source vars.sh
 
 To edit the chains you want to monitor:
 1. Initialize telliot configuration
-Run `poetry run telliot config init`
+Run `telliot config init`
 
 This will create a file called `~/telliot/endpoints.yaml`, where you can list and configure the chains and endpoints you want to monitor.
 You will need a chain_id, network name, provider name, and a url for an endpoint. You must at least enter a mainnet endpoint, along with any other chains you want to monitor. You also must delete any chains you do not want to monitor.
@@ -141,7 +140,6 @@ Ex. If the reported value is "abc123", and the telliot value is "abc1234", then 
 ## Contributing:
 
 - Install Python 3.9
-- Install [Poetry](https://github.com/python-poetry/poetry)
 
 Clone repo:
 ```bash
@@ -154,22 +152,21 @@ cd disputable-values-monitor
 Install dependencies with [Poetry](https://github.com/python-poetry/poetry):
 
 ```
-poetry env use 3.9
-poetry install
+./install.sh
 ```
 
 
 Run tests:
 ```
-poetry run pytest
+pytest
 ```
 Format/lint code:
 ```
-poetry run pre-commit run --all-files
+pre-commit run --all-files
 ```
 Check type hinting:
 ```
-poetry run mypy --strict src --implicit-reexport --ignore-missing-imports --disable-error-code misc
+mypy --strict src --implicit-reexport --ignore-missing-imports --disable-error-code misc
 ```
 Generate requirements.txt in case you have installed new dependencies:
 ```
