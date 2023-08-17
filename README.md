@@ -9,9 +9,8 @@ Fetch is an active oracle protocol on Ethereum that allows users to accept off-c
 
 ## Quickstart
 ```bash!
-python3.9 -m venv venv  # incompatible with python 3.10
-source venv/bin/activate
 ./install.sh
+source venv/bin/activate
 mv venv/lib/python3.9/site-packages/vars.example.sh vars.sh
 mv venv/lib/python3.9/site-packages/disputer-config.yaml disputer-config.yaml
 chained add <name of new account> <private key> <chain id(s) separated by spaces>
@@ -153,6 +152,7 @@ Install dependencies with [Poetry](https://github.com/python-poetry/poetry):
 
 ```
 ./install.sh
+source venv/bin/activate
 ```
 
 
