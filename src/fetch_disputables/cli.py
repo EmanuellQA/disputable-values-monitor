@@ -3,6 +3,8 @@ import logging
 import warnings
 from time import sleep
 
+import os
+
 import click
 import pandas as pd
 from chained_accounts import ChainedAccount
@@ -26,6 +28,12 @@ from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
+from fetch_disputables.Ses import Ses
+
+from dotenv import load_dotenv
+load_dotenv()
+
+notification_service = os.getenv('NOTIFICATION_SERVICE').split(',')
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -34,6 +42,7 @@ price_aggregator_logger.handlers = [
 ]
 
 logger = get_logger(__name__)
+ses = Ses()
 
 
 def print_title_info() -> None:
@@ -156,12 +165,24 @@ async def start(
                 if is_disputing:
                     click.echo("...Now with auto-disputing!")
 
-                alert(all_values, new_report, recipients, from_number)
+                if "sms" in notification_service:
+                    alert(all_values, new_report, recipients, from_number)
+                if "email" in notification_service:
+                    ses.send_email(
+                        subject=f"New Report Event on Chain {chain_id}",
+                        msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
+                    )                                       
 
                 if is_disputing and new_report.disputable:
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
-                        dispute_alert(success_msg, recipients, from_number)
+                        if "sms" in notification_service:
+                            dispute_alert(success_msg, recipients, from_number)
+                        if "email" in notification_service:
+                            ses.send_email(
+                                subject=f"Dispute Successful on Chain {chain_id}",
+                                msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
+                            )
 
                 display_rows.append(
                     (

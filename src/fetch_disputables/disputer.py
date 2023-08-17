@@ -153,7 +153,7 @@ async def dispute(
     if not explorer:
         dispute_tx_link = str(tx_receipt.transactionHash.hex())
     else:
-        dispute_tx_link = explorer + str(tx_receipt.transactionHash.hex())
+        dispute_tx_link = explorer + "tx/" + str(tx_receipt.transactionHash.hex())
 
     logger.info("Dispute Tx Link: " + dispute_tx_link)
     return "Dispute Tx Link: " + dispute_tx_link
