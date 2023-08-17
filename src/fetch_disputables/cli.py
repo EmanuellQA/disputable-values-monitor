@@ -29,6 +29,7 @@ from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
 from fetch_disputables.Ses import Ses
+from fetch_disputables.Slack import Slack
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -42,7 +43,8 @@ price_aggregator_logger.handlers = [
 ]
 
 logger = get_logger(__name__)
-ses = Ses()
+ses = Ses() if "email" in notification_service else None
+slack = Slack() if "slack" in notification_service else None
 
 
 def print_title_info() -> None:
@@ -171,7 +173,12 @@ async def start(
                     ses.send_email(
                         subject=f"New Report Event on Chain {chain_id}",
                         msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
-                    )                                       
+                    )      
+                if "slack" in notification_service:
+                    slack.send_message(
+                        subject=f"New Report Event on Chain {chain_id}",
+                        msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
+                    )                                 
 
                 if is_disputing and new_report.disputable:
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
@@ -180,6 +187,11 @@ async def start(
                             dispute_alert(success_msg, recipients, from_number)
                         if "email" in notification_service:
                             ses.send_email(
+                                subject=f"Dispute Successful on Chain {chain_id}",
+                                msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
+                            )
+                        if "slack" in notification_service:
+                            slack.send_message(
                                 subject=f"Dispute Successful on Chain {chain_id}",
                                 msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
                             )
