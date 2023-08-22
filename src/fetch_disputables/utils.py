@@ -18,7 +18,7 @@ def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
     explorer: str = cfg.get_endpoint().explorer
     if explorer is not None:
-        return explorer + "/tx/" + tx_hash
+        return explorer + "tx/" + tx_hash
     else:
         return f"Explorer not defined for chain_id {cfg.main.chain_id}"
 
