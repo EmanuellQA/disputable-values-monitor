@@ -7,6 +7,20 @@ A CLI dashboard & text alerts app for disputing bad values reported to Fetch ora
 
 Fetch is an active oracle protocol on Ethereum that allows users to accept off-chain data from a distribtued network of data reporters. Given that the Fetch team does not put data on chain for users themselves, users desire to be able to monitor and dispute bad data automatically. Hence, Fetch created the Auto-disputer, which monitors the accuracy of a group of feeds selected by the user, sends a text to the user if a feed becomes inaccurate, and disputes the bad data on-chain to protect the user's protocol from bad data.
 
+## Using Twilio MockClient
+
+1. Start the mock server by starting the docker container:
+    ```sh
+    docker compose up -d
+    ```
+
+2. Setup the `.env` file to use `MOCK_TWILIO` as "true":
+    ```
+    MOCK_TWILIO=true
+    ```
+
+By doing this configuration the DVM will set up the `alerts.py` module to use the MockClient server running on `http://127.0.0.1:4010` for Twilio. You can see the server logs by running `docker ps`, then look up for the container running the `stoplight/prism:4` image, the container name will probably include `disputable-values-monitor`, then run `docker logs <container-id>` -f.
+
 ## Quickstart
 ```bash!
 ./install.sh
