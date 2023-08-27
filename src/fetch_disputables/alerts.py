@@ -3,13 +3,52 @@ import os
 from typing import List
 from typing import Optional
 from typing import Tuple
+import re
 
 import click
 from twilio.rest import Client
+from twilio.http.http_client import TwilioHttpClient
+from twilio.http.response import Response
+from requests import Request, Session
 
 from fetch_disputables import ALWAYS_ALERT_QUERY_TYPES
 from fetch_disputables.data import NewReport
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class MockClient(TwilioHttpClient):
+    def __init__(self):
+        self.response = None
+
+    def request(self, method, url, params=None, data=None, headers=None, auth=None, timeout=None,
+                allow_redirects=False):
+        # Here you can change the URL, headers and other request parameters
+        kwargs = {
+            'method': method.upper(),
+            'url': re.sub(r'^https:\/\/.*?\.twilio\.com', 'http://127.0.0.1:4010', url),
+            'params': params,
+            'data': data,
+            'headers': headers,
+            'auth': auth,
+        }
+
+        session = Session()
+        request = Request(**kwargs)
+
+        prepped_request = session.prepare_request(request)
+        session.proxies.update({
+            'http': 'http://127.0.0.1:4010',
+            'https': 'http://127.0.0.1:4010'
+        })
+        response = session.send(
+            prepped_request,
+            allow_redirects=allow_redirects,
+            timeout=timeout,
+        )
+
+        return Response(int(response.status_code), response.text)
 
 def generic_alert(recipients: List[str], from_number: str, msg: str) -> None:
     """Send a text message to the given recipients."""
@@ -69,6 +108,13 @@ def generate_alert_msg(disputable: bool, link: str) -> str:
 
 def get_twilio_client() -> Client:
     """Get a Twilio client."""
+    if os.environ.get("MOCK_TWILIO") == "true":
+        print("Using Twilio MockClient on port 4010")
+        return Client(
+            os.environ.get("TWILIO_ACCOUNT_SID"),
+            os.environ.get("TWILIO_AUTH_TOKEN"),
+            http_client=MockClient()
+        )
     return Client(os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN"))
 
 

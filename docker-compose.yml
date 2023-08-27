@@ -1,0 +1,8 @@
+# docker-compose.yml
+version: '3'
+services:
+  prism:
+    image: stoplight/prism:4
+    ports:
+      - '4010:4010'
+    command: mock -h 0.0.0.0 https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_api_v2010.json
