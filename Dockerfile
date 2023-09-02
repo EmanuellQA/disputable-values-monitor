@@ -8,13 +8,13 @@ RUN pip3 install --no-cache-dir Jinja2==3.1.2
 
 #copy telliot core and change_address script
 WORKDIR /usr/src/app/telliot-core
-COPY ../telliot-core .
+COPY ./telliot-feeds/telliot-core .
 RUN pip install -e .
 COPY ./change_address.py .
 
 #copy telliot feeds
 WORKDIR /usr/src/app/telliot-feeds
-COPY ../telliot-feeds .
+COPY ./telliot-feeds .
 RUN pip install -e .
 
 #copy dvm
