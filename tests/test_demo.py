@@ -7,7 +7,7 @@ from telliot_core.apps.core import TelliotConfig
 from telliot_core.gas.legacy_gas import fetch_gas_price
 from web3 import Web3
 
-from tellor_disputables.data import get_contract
+from fetch_disputables.data import get_contract
 
 
 @pytest.mark.skip("for demo only")
@@ -25,8 +25,8 @@ async def test_demo(setup: TelliotConfig):
 
     cfg.main.chain_id = 80001
 
-    oracle = get_contract(cfg, disputer, "tellor360-oracle")
-    token = get_contract(cfg, disputer, "trb-token")
+    oracle = get_contract(cfg, disputer, "fetchflex-oracle")
+    token = get_contract(cfg, disputer, "fetch-token")
     oracle.connect()
     token.connect()
 
@@ -74,8 +74,8 @@ async def test_evm_call_demo(setup: TelliotConfig):
 
     cfg.main.chain_id = 80001
 
-    oracle = get_contract(cfg, disputer, "tellor360-oracle")
-    token = get_contract(cfg, disputer, "trb-token")
+    oracle = get_contract(cfg, disputer, "fetchflex-oracle")
+    token = get_contract(cfg, disputer, "fetch-token")
     oracle.connect()
     token.connect()
 

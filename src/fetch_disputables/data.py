@@ -1,4 +1,4 @@
-"""Get and parse NewReport events from Tellor oracles."""
+"""Get and parse NewReport events from Fetch oracles."""
 import asyncio
 import math
 from dataclasses import dataclass
@@ -32,13 +32,13 @@ from web3.exceptions import ExtraDataLengthError
 from web3.middleware import geth_poa_middleware
 from web3.types import LogReceipt
 
-from tellor_disputables import ALWAYS_ALERT_QUERY_TYPES
-from tellor_disputables import NEW_REPORT_ABI
-from tellor_disputables.utils import are_all_attributes_none
-from tellor_disputables.utils import disputable_str
-from tellor_disputables.utils import get_logger
-from tellor_disputables.utils import get_tx_explorer_url
-from tellor_disputables.utils import NewReport
+from fetch_disputables import ALWAYS_ALERT_QUERY_TYPES
+from fetch_disputables import NEW_REPORT_ABI
+from fetch_disputables.utils import are_all_attributes_none
+from fetch_disputables.utils import disputable_str
+from fetch_disputables.utils import get_logger
+from fetch_disputables.utils import get_tx_explorer_url
+from fetch_disputables.utils import NewReport
 
 logger = get_logger(__name__)
 
@@ -316,7 +316,7 @@ async def chain_events(
 
 
 async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) -> List[List[tuple[int, Any]]]:
-    """Get all events from all live Tellor networks"""
+    """Get all events from all live Fetch networks"""
 
     log_loops = []
 

@@ -1,17 +1,30 @@
 # Auto-disputer
-A CLI dashboard & text alerts app for disputing bad values reported to Tellor oracles.
+A CLI dashboard & text alerts app for disputing bad values reported to Fetch oracles.
 
 ![](demo.gif)
 
 ## Introduction
 
-Tellor is an active oracle protocol on Ethereum that allows users to accept off-chain data from a distribtued network of data reporters. Given that the Tellor team does not put data on chain for users themselves, users desire to be able to monitor and dispute bad data automatically. Hence, Tellor created the Auto-disputer, which monitors the accuracy of a group of feeds selected by the user, sends a text to the user if a feed becomes inaccurate, and disputes the bad data on-chain to protect the user's protocol from bad data.
+Fetch is an active oracle protocol on Ethereum that allows users to accept off-chain data from a distribtued network of data reporters. Given that the Fetch team does not put data on chain for users themselves, users desire to be able to monitor and dispute bad data automatically. Hence, Fetch created the Auto-disputer, which monitors the accuracy of a group of feeds selected by the user, sends a text to the user if a feed becomes inaccurate, and disputes the bad data on-chain to protect the user's protocol from bad data.
+
+## Using Twilio MockClient
+
+1. Start the mock server by starting the docker container:
+    ```sh
+    docker compose up -d
+    ```
+
+2. Setup the `.env` file to use `MOCK_TWILIO` as "true":
+    ```
+    MOCK_TWILIO=true
+    ```
+
+By doing this configuration the DVM will set up the `alerts.py` module to use the MockClient server running on `http://127.0.0.1:4010` for Twilio. You can see the server logs by running `docker ps`, then look up for the container running the `stoplight/prism:4` image, the container name will probably include `disputable-values-monitor`, then run `docker logs <container-id>` -f.
 
 ## Quickstart
 ```bash!
-python3.9 -m venv venv  # incompatible with python 3.10
+./install.sh
 source venv/bin/activate
-pip install tellor-disputables
 mv venv/lib/python3.9/site-packages/vars.example.sh vars.sh
 mv venv/lib/python3.9/site-packages/disputer-config.yaml disputer-config.yaml
 chained add <name of new account> <private key> <chain id(s) separated by spaces>
@@ -23,7 +36,6 @@ cli -d  # the d is for dispute!
 
 ### Prerequisites:
 - Install Python 3.9
-- Install [Poetry](https://github.com/python-poetry/poetry)
 - Create an account on [twilio](https://www.twilio.com/docs/sms/quickstart/python)
 
 ### Update environment variables:
@@ -42,7 +54,7 @@ source vars.sh
 
 To edit the chains you want to monitor:
 1. Initialize telliot configuration
-Run `poetry run telliot config init`
+Run `telliot config init`
 
 This will create a file called `~/telliot/endpoints.yaml`, where you can list and configure the chains and endpoints you want to monitor.
 You will need a chain_id, network name, provider name, and a url for an endpoint. You must at least enter a mainnet endpoint, along with any other chains you want to monitor. You also must delete any chains you do not want to monitor.
@@ -69,7 +81,7 @@ By default, the auto-disputer will monitor the ETH/USD feed on any chain id with
 
 ```yaml
 # AutoDisputer configuration file
-feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
+feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
   - query_id: "0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992"
     threshold:
       type: Percentage
@@ -77,7 +89,7 @@ feeds: # please reference https://github.com/tellor-io/dataSpecs/tree/main/types
 
 ```
 
-Where `0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992` represents the `queryId` of the eth/usd feed on Tellor. It is derived from the solidity code
+Where `0x83a7f3d48786ac2667503a61e8c415438ed2922eb86a2906e4ee66d9a2ce4992` represents the `queryId` of the eth/usd feed on Fetch. It is derived from the solidity code
 ```solidity
 queryId = abi.encode("SpotPrice", abi.encode("eth", "usd"));
 ```
@@ -109,9 +121,9 @@ cli --wait 120
 
 ## How it works
 
-The Auto-disputer is a complex event listener for any EVM chain, but specifically it listens for NewReport events on the Tellor network(s) the user wants to monitor.
+The Auto-disputer is a complex event listener for any EVM chain, but specifically it listens for NewReport events on the Fetch network(s) the user wants to monitor.
 
-When the Auto-disputer receives new NewReport events, it parses the reported value from the log, then compares the reported value to the trusted value from the Tellor reporter reference implementation, telliot.
+When the Auto-disputer receives new NewReport events, it parses the reported value from the log, then compares the reported value to the trusted value from the Fetch reporter reference implementation, telliot.
 
 In order to auto-dispute, users need to define what a "disputable value" is. To do this, users can set "thresholds" for feeds they want to monitor. Thresholds in the auto-disputer serve to set cutoffs between a healthy value and a disputable value. Users can pick from three types of thresholds: **range, percentage, and equality**.
 
@@ -141,11 +153,10 @@ Ex. If the reported value is "abc123", and the telliot value is "abc1234", then 
 ## Contributing:
 
 - Install Python 3.9
-- Install [Poetry](https://github.com/python-poetry/poetry)
 
 Clone repo:
 ```bash
-git clone https://github.com/tellor-io/disputable-values-monitor.git
+git clone https://github.com/fetch-io/disputable-values-monitor.git
 ```
 Change directory:
 ```bash
@@ -154,22 +165,22 @@ cd disputable-values-monitor
 Install dependencies with [Poetry](https://github.com/python-poetry/poetry):
 
 ```
-poetry env use 3.9
-poetry install
+./install.sh
+source venv/bin/activate
 ```
 
 
 Run tests:
 ```
-poetry run pytest
+pytest
 ```
 Format/lint code:
 ```
-poetry run pre-commit run --all-files
+pre-commit run --all-files
 ```
 Check type hinting:
 ```
-poetry run mypy --strict src --implicit-reexport --ignore-missing-imports --disable-error-code misc
+mypy --strict src --implicit-reexport --ignore-missing-imports --disable-error-code misc
 ```
 Generate requirements.txt in case you have installed new dependencies:
 ```
@@ -186,11 +197,11 @@ poetry export -f requirements.txt --output requirements.txt --without-hashes
 7. Check the box for This is a pre-release.
 8. Click Publish release.
 9. Navigate to the Actions tab from the main page of the package on github and make sure the release workflow completes successfully.
-10. Check to make sure the new version was released to test PyPI [here](https://test.pypi.org/project/tellor-disputables/).
+10. Check to make sure the new version was released to test PyPI [here](https://test.pypi.org/project/fetch-disputables/).
 11. Test downloading and using the new version of the package from test PyPI ([example](https://stackoverflow.com/questions/34514703/pip-install-from-pypi-works-but-from-testpypi-fails-cannot-find-requirements)).
 12. Navigate back to the pre-release you just made and click edit (the pencil icon).
 13. Uncheck the This is a pre-release box.
 14. Publish the release.
 15. Make sure the release github action goes through.
-16. Download and test the new release on PyPI official [here](https://pypi.org/project/tellor-disputables/).
+16. Download and test the new release on PyPI official [here](https://pypi.org/project/fetch-disputables/).
 17. Change the package version in **pyproject.toml** to be the next development version. For example, if you just released version 0.0.5, change **version** to be "0.0.6dev0".
