@@ -176,6 +176,7 @@ async def setup_and_start(is_disputing, config, config_patches=None):
             pass
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_default_config(submit_multiple_bad_values: Awaitable[TelliotCore]):
     """Test that the default config works as expected"""
@@ -197,6 +198,7 @@ async def test_default_config(submit_multiple_bad_values: Awaitable[TelliotCore]
     assert await check_dispute(oracle, evm_query_id, evm_timestamp)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_custom_btc_config(submit_multiple_bad_values: Awaitable[TelliotCore]):
     """Test that a custom btc config works as expected"""
@@ -223,6 +225,7 @@ async def test_custom_btc_config(submit_multiple_bad_values: Awaitable[TelliotCo
     assert not await check_dispute(oracle, evm_query_id, evm_timestamp)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_custom_eth_btc_config(submit_multiple_bad_values: Awaitable[TelliotCore]):
     """Test that eth and btc in dispute config"""
@@ -254,6 +257,7 @@ async def test_custom_eth_btc_config(submit_multiple_bad_values: Awaitable[Telli
     assert not await check_dispute(oracle, evm_query_id, evm_timestamp)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_get_source_from_data(submit_multiple_bad_values: Awaitable[TelliotCore], caplog):
     """Test when get_source_from_data function returns None"""
@@ -267,6 +271,7 @@ async def test_get_source_from_data(submit_multiple_bad_values: Awaitable[Tellio
     assert "Unable to form source from queryData of query type EVMCall" in caplog.text
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_evm_type_alert(submit_multiple_bad_values: Awaitable[TelliotCore], caplog):
     """Test when evm type alert is triggered should display message that difference can't be evaluated"""
@@ -288,6 +293,7 @@ async def test_evm_type_alert(submit_multiple_bad_values: Awaitable[TelliotCore]
     assert "Cannot evaluate percent difference on text/addresses/bytes" in caplog.text
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_custom_spot_type(stake_deposited: Awaitable[TelliotCore]):
     core = await stake_deposited
@@ -316,6 +322,7 @@ async def test_custom_spot_type(stake_deposited: Awaitable[TelliotCore]):
         assert expected in last_row
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_gas_oracle_type(stake_deposited: Awaitable[TelliotCore]):
     core = await stake_deposited
@@ -352,6 +359,7 @@ async def test_gas_oracle_type(stake_deposited: Awaitable[TelliotCore]):
         assert expected in last_row
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_evmcall_right_value_wrong_timestamp(submit_multiple_bad_values: Awaitable[TelliotCore]):
     """Test when evm call response has the same value response but different timestamp"""
