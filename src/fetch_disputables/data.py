@@ -33,12 +33,15 @@ from web3.middleware import geth_poa_middleware
 from web3.types import LogReceipt
 
 from fetch_disputables import ALWAYS_ALERT_QUERY_TYPES
-from fetch_disputables import NEW_REPORT_ABI
+from fetch_disputables import NEW_REPORT_ABI, NEW_DISPUTE_ABI
 from fetch_disputables.utils import are_all_attributes_none
 from fetch_disputables.utils import disputable_str
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import NewReport
+from fetch_disputables.utils import NewDispute
+
+from fetch_disputables.utils import Topics
 
 logger = get_logger(__name__)
 
@@ -50,6 +53,7 @@ class Metrics(Enum):
 
 
 start_block: Dict[int, int] = {}
+disputes_start_block: Dict[int, int] = {}
 inital_block_offset = 1000
 
 
@@ -269,6 +273,10 @@ async def log_loop(web3: Web3, chain_id: int, addr: str, topics: list[str]) -> l
         return []
     from_block = start_block.get(chain_id, block_number - inital_block_offset)
     from_block -= 10  # go back 10 more blocks to account for reorgs
+
+    if topics[0] == Topics.NEW_DISPUTE:
+        from_block = disputes_start_block.get(chain_id, block_number - inital_block_offset)
+        from_block -= 10
     event_filter = mk_filter(from_block, block_number, addr, topics)
 
     try:
@@ -290,6 +298,8 @@ async def log_loop(web3: Web3, chain_id: int, addr: str, topics: list[str]) -> l
         if (chain_id, event) not in unique_events_list:
             unique_events_list.append((chain_id, event))
     start_block[chain_id] = block_number
+    if topics[0] == Topics.NEW_DISPUTE:
+        disputes_start_block[chain_id] = block_number
     return unique_events_list
 
 
@@ -378,6 +388,39 @@ def get_source_from_data(query_data: bytes) -> Optional[DataSource]:
         setattr(source, key, value)
     return source
 
+async def parse_new_dispute_event(
+    cfg: TelliotConfig,
+    log: LogReceipt
+) -> Optional[NewDispute]:
+    chain_id = cfg.main.chain_id
+    endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
+
+    new_dispute = NewDispute()
+
+    if not endpoint:
+        logger.error(f"Unable to find a suitable endpoint for chain_id {chain_id}")
+        return None
+    
+    try:
+        endpoint.connect()
+        w3 = endpoint.web3
+    except ValueError as e:
+        logger.error(f"Unable to connect to endpoint on chain_id {chain_id}: {e}")
+        return None
+    
+    codec = w3.codec
+    event_data = get_event_data(codec, NEW_DISPUTE_ABI, log)
+
+    new_dispute.tx_hash = event_data.transactionHash.hex()
+    new_dispute.chain_id = chain_id
+    new_dispute.dispute_id = event_data.args._disputeId
+    new_dispute.reporter = event_data.args._reporter
+    new_dispute.query_id = "0x" + event_data.args._queryId.hex()
+    new_dispute.initiator = event_data.args._initiator
+    new_dispute.timestamp = event_data.args._timestamp
+    new_dispute.link = get_tx_explorer_url(tx_hash=new_dispute.tx_hash, cfg=cfg)
+
+    return new_dispute
 
 async def parse_new_report_event(
     cfg: TelliotConfig,
