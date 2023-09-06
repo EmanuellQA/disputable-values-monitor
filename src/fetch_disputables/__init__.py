@@ -103,3 +103,16 @@ NEW_REPORT_ABI = {
     "name": "NewReport",
     "type": "event",
 }
+
+NEW_DISPUTE_ABI = {
+    "anonymous": False,
+    "inputs": [
+        {"indexed": False, "internalType": "uint256", "name": "_disputeId", "type": "uint256"},
+        {"indexed": False, "internalType": "bytes32", "name": "_queryId", "type": "bytes32"},
+        {"indexed": False, "internalType": "uint256", "name": "_timestamp", "type": "uint256"},
+        {"indexed": False, "internalType": "address", "name": "_reporter", "type": "address"},
+        {"indexed": False, "internalType": "address", "name": "_initiator", "type": "address"}
+    ],
+    "name": "NewDispute",
+    "type": "event"
+}
