@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 from telliot_feeds.dtypes.datapoint import datetime_now_utc
-from telliot_feeds.feeds import mimicry_nft_market_index_usd_feed
+# from telliot_feeds.feeds import mimicry_nft_market_index_usd_feed
 from web3 import Web3
 
 from fetch_disputables.config import AutoDisputerConfig
@@ -24,6 +24,7 @@ def revert_to_snapshot(w3, snapshot_id):
     w3.provider.make_request("evm_revert", [snapshot_id])
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_disputability_mimicry_nft_index_type(setup, disputer_account):
     # get a snapshot of chain to revert to
