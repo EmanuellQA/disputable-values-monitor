@@ -213,6 +213,12 @@ source venv/bin/activate
 
 
 Run tests:
+
+Before executing `pytest`, initialize a `ganache-cli` in a separated terminal.
+```sh
+ganache-cli
+```
+
 ```
 pytest
 ```
