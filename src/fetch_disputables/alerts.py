@@ -3,6 +3,7 @@ import os
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 import re
 
 import click
@@ -13,6 +14,9 @@ from requests import Request, Session
 
 from fetch_disputables import ALWAYS_ALERT_QUERY_TYPES
 from fetch_disputables.data import NewReport
+
+from fetch_disputables.Ses import Ses
+from fetch_disputables.Slack import Slack
 
 from dotenv import load_dotenv
 
@@ -127,3 +131,21 @@ def send_text_msg(client: Client, recipients: list[str], from_number: str, msg: 
             from_=from_number,
             body=msg,
         )
+
+
+def handle_notification_service(
+    subject: str,
+    msg: str,
+    notification_service: Union[List[str], None],
+    sms_message_function,
+    ses: Union[Ses, None],
+    slack: Union[Slack, None],
+) -> List[str]:
+    results = {"sms": None, "email": None, "slack": None}
+    if "sms" in notification_service:
+        results["sms"] = sms_message_function()
+    if "email" in notification_service:
+        results["email"] = ses.send_email(subject=subject, msg=msg)
+    if "slack" in notification_service:
+        results["slack"] = slack.send_message(subject=subject, msg=msg)
+    return results
