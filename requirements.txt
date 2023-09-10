@@ -1,3 +1,3 @@
-../telliot-feeds/telliot-core
-../telliot-feeds
+./telliot-feeds/telliot-core
+./telliot-feeds
 twilio
