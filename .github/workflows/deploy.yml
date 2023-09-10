@@ -47,10 +47,9 @@ jobs:
         run: |
           mv ./telliot-feeds/telliot-core ../
           mv ./telliot-feeds ../
-          pip install --no-cache-dir -r requirements.txt && pip install -e .
-          cd ../telliot-feeds && pip install --no-cache-dir -r requirements.txt && pip install -e .
-          cd ../telliot-core && pip install --no-cache-dir -r requirements-dev.txt && pip install -e .
-          pip install twilio
+          pip install -r requirements.txt
+          cd ../telliot-feeds && pip install -r requirements.txt
+          cd ../telliot-core && pip install -r requirements.txt
           npm install -g ganache
 
       - name: Run tests
