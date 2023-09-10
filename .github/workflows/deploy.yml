@@ -45,7 +45,12 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sh install.sh
+          mv ./telliot-feeds/telliot-core ../
+          mv ./telliot-feeds ../
+          pip install --no-cache-dir -r requirements.txt && pip install -e .
+          cd ../telliot-feeds && pip install --no-cache-dir -r requirements.txt && pip install -e .
+          cd ../telliot-core && pip install --no-cache-dir -r requirements-dev.txt && pip install -e .
+          pip install twilio
           npm install -g ganache
 
       - name: Run tests
