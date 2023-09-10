@@ -49,7 +49,7 @@ jobs:
           mv ./telliot-feeds ../
           pip install twilio
           cd ../telliot-feeds && pip install -r requirements.txt
-          cd ../telliot-core && pip install -r requirements.txt
+          cd ../telliot-core && pip install -r requirements-dev.txt
           npm install -g ganache
 
       - name: Run tests
