@@ -112,11 +112,11 @@ def generate_alert_msg(disputable: bool, link: str) -> str:
 
 def get_twilio_client() -> Client:
     """Get a Twilio client."""
-    if os.environ.get("MOCK_TWILIO") == "true":
+    if os.environ.get("MOCK_TWILIO", "true") == "true":
         print("Using Twilio MockClient on port 4010")
         return Client(
-            os.environ.get("TWILIO_ACCOUNT_SID"),
-            os.environ.get("TWILIO_AUTH_TOKEN"),
+            "AC33333333333333333333333333333333",
+            "33333333333333333333333333333333",
             http_client=MockClient()
         )
     return Client(os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN"))

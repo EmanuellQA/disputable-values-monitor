@@ -13,10 +13,13 @@ from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_feeds.utils.cfg import setup_account
 
+from dotenv import load_dotenv
+load_dotenv()
 
 def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
     explorer: str = cfg.get_endpoint().explorer
+    if explorer is not None and explorer[-1] != "/": explorer += "/"
     if explorer is not None:
         return explorer + "tx/" + tx_hash
     else:
@@ -145,3 +148,9 @@ def format_values(val: Any) -> Any:
         return f"{str(val)[:6]}...{str(val)[-5:]}"
     else:
         return val
+
+def get_service_notification():
+    return [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE', "").split(',')]
+
+def get_reporters():
+    return os.getenv('REPORTERS', "").split(',')

@@ -37,3 +37,8 @@ class Ses:
         except ClientError:
             logger.error(
                 f"Failed to send email from {self.source} to {self.destination}")
+
+class MockSes():
+    def send_email(self, subject: str, msg: str) -> dict:
+        logger.info("Using mock AWS SES client.")
+        return {'ResponseMetadata': {'HTTPStatusCode': 200}}

@@ -30,14 +30,15 @@ from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
-from fetch_disputables.Ses import Ses
-from fetch_disputables.Slack import Slack
+from fetch_disputables.Ses import Ses, MockSes
+from fetch_disputables.Slack import Slack, MockSlack
+from fetch_disputables.utils import get_service_notification, get_reporters
 
 from dotenv import load_dotenv
 load_dotenv()
 
-notification_service = [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE').split(',')]
-reporters = os.getenv('REPORTERS').split(',')
+notification_service = get_service_notification()
+reporters = get_reporters()
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -46,8 +47,13 @@ price_aggregator_logger.handlers = [
 ]
 
 logger = get_logger(__name__)
-ses = Ses() if "email" in notification_service else None
-slack = Slack() if "slack" in notification_service else None
+ses = None
+slack = None
+if "email" in notification_service:
+    ses = MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses()
+
+if "slack" in notification_service:
+    slack = MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack()
 
 
 def print_title_info() -> None:
