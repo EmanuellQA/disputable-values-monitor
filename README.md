@@ -22,6 +22,48 @@ Fetch is an active oracle protocol on Ethereum that allows users to accept off-c
 By doing this configuration the DVM will set up the `alerts.py` module to use the MockClient server running on `http://127.0.0.1:4010` for Twilio. You can see the server logs by running `docker ps`, then look up for the container running the `stoplight/prism:4` image, the container name will probably include `disputable-values-monitor`, then run `docker logs <container-id>` -f.
 
 ## Quickstart
+
+Configure environment variables:
+```sh
+cp .env.example .env
+```
+
+```
+# Twilio
+MOCK_TWILIO=true # uses the mock server for twilio
+TWILIO_AUTH_TOKEN=
+TWILIO_ACCOUNT_SID=
+TWILIO_FROM="+1231231234"
+ALERT_RECIPIENTS="+1231231234,+1231231234,+1231231234"
+
+# AWS Simple Email Service (SES)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+AWS_SOURCE_EMAIL=user@example.com
+AWS_DESTINATION_EMAILS="user1@example.com,user2@example.com"
+
+# Telliot environment variables
+PLS_SOURCE=weighted
+PLS_CURRENCY_SOURCES=dai,usdc,plsx
+PLS_ADDR_SOURCES="0xa2d510bf42d2b9766db186f44a902228e76ef262,0xb7f1f5a3b79b0664184bb0a5893aa9359615171b,0xFfd1fD891301D347ECaf4fC76866030387e97ED4"
+
+COINGECKO_MOCK_URL=https://mock-price.fetchoracle.com/coingecko
+PULSEX_SUBGRAPH_URL=https://graph.v4.testnet.pulsechain.com
+FETCH_ADDRESS=0xb0f674d98ef8534b27a142ea2993c7b03bc7d649
+
+# Slack
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# list of services to send alerts
+NOTIFICATION_SERVICE="sms,email,slack"
+
+# list of reporters to monitor new disputes 
+REPORTERS="0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000"
+```
+
+Note that to use the "sms" service in the `NOTIFICATION_SERVICE` service list requires a Twilio `.env` configuration, likewise, the "slack" service requires a SLACK_WEBHOOK_URL, and AWS SES environment config for the "email" service.
+
 ```bash!
 ./install.sh
 source venv/bin/activate
@@ -171,6 +213,12 @@ source venv/bin/activate
 
 
 Run tests:
+
+Before executing `pytest`, initialize a `ganache-cli` in a separated terminal.
+```sh
+ganache-cli
+```
+
 ```
 pytest
 ```

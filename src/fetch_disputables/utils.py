@@ -27,7 +27,7 @@ def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
 class Topics:
     """Topics for Fetch events."""
 
-    # sha3("NewReport(bytes32,uint256,uint256,uint256,uint256)")
+    # Keccak256("NewReport(bytes32,uint256,bytes,uint256,bytes,address)")
     NEW_REPORT: str = "0x48e9e2c732ba278de6ac88a3a57a5c5ba13d3d8370e709b3b98333a57876ca95"  # oracle.NewReport
     # sha3("NewOracleAddress(address,uint256)")
     NEW_ORACLE_ADDRESS: str = (
@@ -37,6 +37,22 @@ class Topics:
     NEW_PROPOSED_ORACLE_ADDRESS: str = (
         "0x8fe6b09081e9ffdaf91e337aba6769019098771106b34b194f1781b7db1bf42b"  # oracle.NewProposedOracleAddress
     )
+    # Keccak256("NewDispute(uint256,bytes32,uint256,address,address)")
+    NEW_DISPUTE: str = "0xfb173db1d03c427e32a0cd1772db1992fc65a383a802057ce24c3b619e65e8bd"
+
+
+@dataclass
+class NewDispute:
+    """NewDispute event."""
+
+    tx_hash: str = ""
+    timestamp: int = 0
+    reporter: str = ""
+    query_id: str = ""
+    dispute_id: int = 0
+    initiator: str = ""
+    chain_id: int = 0
+    link: str = ""
 
 
 @dataclass

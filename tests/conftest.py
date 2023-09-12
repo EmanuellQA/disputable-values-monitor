@@ -113,15 +113,15 @@ def check_twilio_configured() -> None:
 @pytest.fixture
 def setup():
     """Setup contracts and fork mainnet for testing"""
-    token_contract_info = contract_directory.find(name="fetch-token", chain_id=1)[0]
-    governance_contract_info = contract_directory.find(name="fetch-governance", chain_id=1)[0]
-    oracle_contract_info = contract_directory.find(name="fetchflex-oracle", chain_id=1)[0]
-    autopay_contract_info = contract_directory.find(name="fetch360-autopay", chain_id=1)[0]
+    token_contract_info = contract_directory.find(name="fetch-token", chain_id=943)[0]
+    governance_contract_info = contract_directory.find(name="fetch-governance", chain_id=943)[0]
+    oracle_contract_info = contract_directory.find(name="fetchflex-oracle", chain_id=943)[0]
+    autopay_contract_info = contract_directory.find(name="fetchflex-autopay", chain_id=943)[0]
 
-    contract_directory.entries["fetchflex-oracle"].address[1337] = oracle_contract_info.address[1]
-    contract_directory.entries["fetch-token"].address[1337] = token_contract_info.address[1]
-    contract_directory.entries["fetch360-autopay"].address[1337] = autopay_contract_info.address[1]
-    contract_directory.entries["fetch-governance"].address[1337] = governance_contract_info.address[1]
+    contract_directory.entries["fetchflex-oracle"].address[1337] = oracle_contract_info.address[943]
+    contract_directory.entries["fetch-token"].address[1337] = token_contract_info.address[943]
+    contract_directory.entries["fetchflex-autopay"].address[1337] = autopay_contract_info.address[943]
+    contract_directory.entries["fetch-governance"].address[1337] = governance_contract_info.address[943]
 
     cfg = TelliotConfig()
     cfg.main.chain_id = 1337

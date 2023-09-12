@@ -17,10 +17,12 @@ from fetch_disputables.alerts import alert
 from fetch_disputables.alerts import dispute_alert
 from fetch_disputables.alerts import generic_alert
 from fetch_disputables.alerts import get_twilio_info
+from fetch_disputables.alerts import handle_notification_service
 from fetch_disputables.config import AutoDisputerConfig
 from fetch_disputables.data import chain_events
 from fetch_disputables.data import get_events
 from fetch_disputables.data import parse_new_report_event
+from fetch_disputables.data import parse_new_dispute_event
 from fetch_disputables.disputer import dispute
 from fetch_disputables.utils import clear_console
 from fetch_disputables.utils import format_values
@@ -34,7 +36,8 @@ from fetch_disputables.Slack import Slack
 from dotenv import load_dotenv
 load_dotenv()
 
-notification_service = os.getenv('NOTIFICATION_SERVICE').split(',')
+notification_service = [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE').split(',')]
+reporters = os.getenv('REPORTERS').split(',')
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -103,6 +106,7 @@ async def start(
 
     display_rows = []
     displayed_events = set()
+    new_dispute_events_alerts_sent = set()
 
     # Build query if filter is set
     while True:
@@ -127,7 +131,12 @@ async def start(
             },
             topics=[[Topics.NEW_ORACLE_ADDRESS], [Topics.NEW_PROPOSED_ORACLE_ADDRESS]],
         )
-        event_lists += fetch360_events + fetch_flex_report_events
+        governance_dispute_events = await get_events(
+            cfg=cfg,
+            contract_name="fetch-governance",
+            topics=[Topics.NEW_DISPUTE],
+        )
+        event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
         for event_list in event_lists:
             # event_list = [(80001, EXAMPLE_NEW_REPORT_EVENT)]
             if not event_list:
@@ -142,6 +151,30 @@ async def start(
                     link = get_tx_explorer_url(cfg=cfg, tx_hash=event.transactionHash.hex())
                     msg = f"\n❗NEW ORACLE ADDRESS ALERT❗\n{link}"
                     generic_alert(from_number=from_number, recipients=recipients, msg=msg)
+                    continue
+                    
+                if HexBytes(Topics.NEW_DISPUTE) in event.topics:
+                    if event.transactionHash.hex() in new_dispute_events_alerts_sent:
+                        continue
+
+                    new_dispute = await parse_new_dispute_event(
+                        cfg=cfg,
+                        log=event
+                    )
+
+                    if new_dispute.reporter in reporters:
+                        subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {chain_id}"
+                        msg = f"New Dispute Event:\n{new_dispute}"
+                        handle_notification_service(
+                            subject=subject,
+                            msg=msg,
+                            notification_service=notification_service,
+                            sms_message_function=lambda : dispute_alert(f"{subject}\n{msg}", recipients, from_number),
+                            ses=ses,
+                            slack=slack,
+                        )
+                        logger.info(f"New Dispute Event against Reporter - alerts sent - {notification_service}")
+                        new_dispute_events_alerts_sent.add(new_dispute.tx_hash)
                     continue
 
                 try:
@@ -167,34 +200,26 @@ async def start(
                 if is_disputing:
                     click.echo("...Now with auto-disputing!")
 
-                if "sms" in notification_service:
-                    alert(all_values, new_report, recipients, from_number)
-                if "email" in notification_service:
-                    ses.send_email(
-                        subject=f"New Report Event on Chain {chain_id}",
-                        msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
-                    )      
-                if "slack" in notification_service:
-                    slack.send_message(
-                        subject=f"New Report Event on Chain {chain_id}",
-                        msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
-                    )                                 
+                handle_notification_service(
+                    subject=f"New Report Event on Chain {chain_id}",
+                    msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
+                    notification_service=notification_service,
+                    sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
+                    ses=ses,
+                    slack=slack,
+                )
 
                 if is_disputing and new_report.disputable:
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
-                        if "sms" in notification_service:
-                            dispute_alert(success_msg, recipients, from_number)
-                        if "email" in notification_service:
-                            ses.send_email(
-                                subject=f"Dispute Successful on Chain {chain_id}",
-                                msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
-                            )
-                        if "slack" in notification_service:
-                            slack.send_message(
-                                subject=f"Dispute Successful on Chain {chain_id}",
-                                msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
-                            )
+                        handle_notification_service(
+                            subject=f"Dispute Successful on Chain {chain_id}",
+                            msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
+                            notification_service=notification_service,
+                            sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
+                            ses=ses,
+                            slack=slack,
+                        )
 
                 display_rows.append(
                     (

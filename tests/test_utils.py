@@ -17,7 +17,7 @@ from src.fetch_disputables.utils import select_account
 
 def test_get_tx_explorer_url():
     tx_hash = EXAMPLE_NEW_REPORT_EVENT["transactionHash"].hex()
-    chain_id = 1
+    chain_id = 943
     cfg = TelliotConfig()
     cfg.main.chain_id = chain_id
 
@@ -42,7 +42,7 @@ def test_logger():
 
     logger = get_logger(__name__)
 
-    logger.error("test message that writes to log.txt")
+    logger.info("test message that writes to log.txt")
 
     with open("log.txt", "r") as f:
         contents = f.readlines()[-1]
