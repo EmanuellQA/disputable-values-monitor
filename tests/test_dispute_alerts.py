@@ -73,7 +73,7 @@ def test_notification_services_new_dispute_against_reporter():
                 recipients=recipients,
                 msg=msg
             ),
-            ses=MockSes() if os.getenv("MOCK_AWS", "true") == "true" else Ses(),
+            ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(),
             slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack()
         )
 
