@@ -223,7 +223,7 @@ async def start(
                     if success_msg:
                         handle_notification_service(
                             subject=f"Dispute Successful on Chain {chain_id}",
-                            msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
+                            msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}\nReport:\n{new_report}",
                             notification_service=notification_service,
                             sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
                             ses=ses,
