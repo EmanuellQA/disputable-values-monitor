@@ -49,11 +49,6 @@ price_aggregator_logger.handlers = [
 logger = get_logger(__name__)
 ses = None
 slack = None
-if "email" in notification_service:
-    ses = MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses()
-
-if "slack" in notification_service:
-    slack = MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack()
 
 
 def print_title_info() -> None:
@@ -78,6 +73,13 @@ def print_title_info() -> None:
 @async_run
 async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
+    global ses, slack
+    if "email" in notification_service:
+        ses = MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values)
+
+    if "slack" in notification_service:
+        slack = MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values)
+
     await start(
         all_values=all_values,
         wait=wait,
@@ -213,6 +215,7 @@ async def start(
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
                     ses=ses,
                     slack=slack,
+                    new_report=new_report
                 )
 
                 if is_disputing and new_report.disputable:
