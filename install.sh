@@ -1,5 +1,8 @@
 #!/bin/bash
 
+git submodule update --init --recursive
+git submodule update --remote --recursive
+
 python -m venv venv
 
 source venv/bin/activate
