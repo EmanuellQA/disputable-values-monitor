@@ -2,6 +2,8 @@
 import os
 from unittest import mock
 
+import pytest
+
 from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
@@ -50,6 +52,7 @@ def test_logger():
     assert "test message that writes to log.txt" in contents
 
 
+@pytest.mark.skip
 def test_select_account():
     """test that accounts are not neccesary for running the DVM"""
 

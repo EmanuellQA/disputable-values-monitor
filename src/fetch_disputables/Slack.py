@@ -38,3 +38,8 @@ class Slack:
             return response
         except Exception as e:
             logger.error(f"Failed to send slack message: {e}")
+
+class MockSlack():
+    def send_message(self, subject: str, msg: str):
+        logger.info("Using mock Slack client.")
+        return type('obj', (object,), {'status_code': 200})

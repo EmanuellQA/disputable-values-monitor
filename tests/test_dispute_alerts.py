@@ -6,31 +6,16 @@ from hexbytes import HexBytes
 
 from fetch_disputables.alerts import get_twilio_client
 from fetch_disputables.alerts import handle_notification_service
-from fetch_disputables.utils import NewDispute
+from fetch_disputables.utils import NewDispute, get_reporters, get_service_notification
 from fetch_disputables.data import parse_new_dispute_event
 from telliot_core.apps.telliot_config import TelliotConfig
 
-from fetch_disputables.Ses import Ses
-from fetch_disputables.Slack import Slack
+from fetch_disputables.Ses import Ses, MockSes
+from fetch_disputables.Slack import Slack, MockSlack
 
 from web3.datastructures import AttributeDict
 
 logger = logging.getLogger(__name__)
-
-
-class MockSes(Ses):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def send_email(self, subject: str, msg: str) -> dict:
-        logger.info("Using mock AWS SES client.")
-        return {'ResponseMetadata': {'HTTPStatusCode': 200}}
-
-
-class MockSlack(Slack):
-    def send_message(self, subject: str, msg: str):
-        logger.info("Using mock slack client.")
-        return type('obj', (object,), {'status_code': 200})
 
 
 def local_dispute_alert(msg, recipients, from_number):
@@ -71,9 +56,9 @@ def test_notification_services_new_dispute_against_reporter():
         from_number = "+19035029327"
         recipients = ["+17897894567"]
     else:
-        notification_service = [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE').split(',')]
+        notification_service = get_service_notification()
         from_number = os.getenv("TWILIO_FROM")
-        recipients =  os.getenv("ALERT_RECIPIENTS").split(',')
+        recipients =  os.getenv("ALERT_RECIPIENTS", "").split(',')
 
     if new_dispute.reporter in reporters:
         subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {new_dispute.chain_id}"
@@ -88,8 +73,8 @@ def test_notification_services_new_dispute_against_reporter():
                 recipients=recipients,
                 msg=msg
             ),
-            ses=MockSes() if os.getenv("MOCK_TWILIO", "true") == "true" else Ses(),
-            slack=MockSlack() if os.getenv("MOCK_TWILIO", "true") == "true" else Slack()
+            ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(),
+            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack()
         )
 
         for service in notification_service:
@@ -149,7 +134,7 @@ async def test_parse_new_dispute_event():
 
 def test_get_reporters_list():
     os.environ["REPORTERS"] = "0x1111111111111111111111111111111111111111,0x2222222222222222222222222222222222222222"
-    reporters = os.getenv('REPORTERS').split(',')
+    reporters = get_reporters()
 
     assert reporters is not None
     assert isinstance(reporters, list)
