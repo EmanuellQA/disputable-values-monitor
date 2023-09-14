@@ -32,13 +32,15 @@ from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
 from fetch_disputables.Ses import Ses, MockSes
 from fetch_disputables.Slack import Slack, MockSlack
-from fetch_disputables.utils import get_service_notification, get_reporters
+from fetch_disputables.utils import get_service_notification, get_reporters, get_report_interval
 
 from dotenv import load_dotenv
 load_dotenv()
 
 notification_service = get_service_notification()
 reporters = get_reporters()
+reporters_last_timestamp = dict()
+reporters_report_interval = get_report_interval() 
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -145,6 +147,9 @@ async def start(
             topics=[Topics.NEW_DISPUTE],
         )
         event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
+
+        send_alerts_when_reporters_stops_reporting(reporters_last_timestamp)
+
         for event_list in event_lists:
             # event_list = [(80001, EXAMPLE_NEW_REPORT_EVENT)]
             if not event_list:
@@ -201,6 +206,13 @@ async def start(
                     continue
                 displayed_events.add(new_report.tx_hash)
 
+                if new_report.reporter in reporters:
+                    update_reporter_last_timestamp(
+                        reporters_last_timestamp,
+                        new_report.reporter,
+                        new_report.submission_timestamp
+                    )
+    
                 # Refesh
                 clear_console()
                 print_title_info()
@@ -275,6 +287,45 @@ async def start(
 
         sleep(wait)
 
+
+def update_reporter_last_timestamp(
+    reporters_last_timestamp,
+    reporter: str,
+    new_report_timestamp: int
+):
+    timestamp, alert_sent = reporters_last_timestamp.get(reporter, (0, False))
+    last_timestamp = max(
+        timestamp,
+        new_report_timestamp
+    )
+    reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
+
+def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp):
+    from_number, recipients = get_twilio_info()
+
+    current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+
+    for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
+        if current_timestamp - last_timestamp <= reporters_report_interval:
+            continue
+        if alert_sent:
+            continue
+
+        minutes = f"{reporters_report_interval // 60} minutes"
+        subject = f"Reporter stop reporting"
+        msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
+        handle_notification_service(
+            subject=subject,
+            msg=msg,
+            notification_service=notification_service,
+            sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
+            ses=ses,
+            slack=slack,
+        )
+        logger.info(
+            f"{msg} - alerts sent - {notification_service}"
+        )
+        reporters_last_timestamp[reporter] = (last_timestamp, True)
 
 if __name__ == "__main__":
     main()

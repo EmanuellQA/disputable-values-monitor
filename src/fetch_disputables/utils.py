@@ -73,6 +73,7 @@ class NewReport:
     query_id: str = ""
     disputable: Optional[bool] = None
     status_str: str = ""
+    reporter: str = ""
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -154,3 +155,6 @@ def get_service_notification():
 
 def get_reporters():
     return os.getenv('REPORTERS', "").split(',')
+
+def get_report_interval():
+    return int(os.getenv('REPORT_INTERVAL', 60 * 15))
