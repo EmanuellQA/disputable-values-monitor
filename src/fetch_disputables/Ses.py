@@ -6,19 +6,25 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
+from fetch_disputables.data import NewReport
+
 from fetch_disputables.utils import get_logger
 
 logger = get_logger(__name__)
 
 class Ses:
-    def __init__(self) -> None:
+    def __init__(self, all_values: bool) -> None:
         self.ses = boto3.client('ses', config=Config(
             region_name=os.getenv('AWS_REGION'),
         ))
         self.source = os.getenv('AWS_SOURCE_EMAIL')
         self.destination = os.getenv('AWS_DESTINATION_EMAILS').split(',')
+        self.all_values = all_values
 
-    def send_email(self, subject: str, msg: str) -> dict:
+    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
+        if new_report and not self.all_values and not new_report.disputable:
+            return
+        
         send_args = {
             'Source': self.source,
             'Destination': {
@@ -39,6 +45,6 @@ class Ses:
                 f"Failed to send email from {self.source} to {self.destination}")
 
 class MockSes():
-    def send_email(self, subject: str, msg: str) -> dict:
+    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
         logger.info("Using mock AWS SES client.")
         return {'ResponseMetadata': {'HTTPStatusCode': 200}}

@@ -51,14 +51,21 @@ def test_notification_services_new_dispute_against_reporter():
         "0x2222222222222222222222222222222222222222"
     ]
 
+    notification_service = get_service_notification()
+
     if os.getenv("MOCK_TWILIO", "true") == "true":
-        notification_service = ["sms", "email", "slack"]
+        notification_service.append("sms")
         from_number = "+19035029327"
         recipients = ["+17897894567"]
     else:
-        notification_service = get_service_notification()
         from_number = os.getenv("TWILIO_FROM")
         recipients =  os.getenv("ALERT_RECIPIENTS", "").split(',')
+
+    if os.getenv("MOCK_SES", "true") == "true":
+        notification_service.append("email")
+
+    if os.getenv("MOCK_SLACK", "true") == "true":
+        notification_service.append("slack")
 
     if new_dispute.reporter in reporters:
         subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {new_dispute.chain_id}"
@@ -73,8 +80,8 @@ def test_notification_services_new_dispute_against_reporter():
                 recipients=recipients,
                 msg=msg
             ),
-            ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(),
-            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack()
+            ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values=False),
+            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values=False)
         )
 
         for service in notification_service:
