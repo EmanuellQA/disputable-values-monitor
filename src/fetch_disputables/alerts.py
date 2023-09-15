@@ -46,13 +46,12 @@ class MockClient(TwilioHttpClient):
             'http': 'http://127.0.0.1:4010',
             'https': 'http://127.0.0.1:4010'
         })
-        response = session.send(
-            prepped_request,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
 
-        return Response(int(response.status_code), response.text)
+        response_text = '{"body":"string","num_segments":"string","direction":"inbound","from":"string","to":"string","date_updated":"string","price":"string","error_message":"string","uri":"string","account_sid":"stringstringstringstringstringstri","num_media":"string","status":"queued","messaging_service_sid":"stringstringstringstringstringstri","sid":"stringstringstringstringstringstri","date_sent":"string","date_created":"string","error_code":0,"price_unit":"string","api_version":"string","subresource_uris":{},"tags":"null"}'
+        return Response(
+            int("201"),
+            response_text
+        )
 
 def generic_alert(recipients: List[str], from_number: str, msg: str) -> None:
     """Send a text message to the given recipients."""
