@@ -157,7 +157,7 @@ def get_reporters():
     return [reporter.strip() for reporter in os.getenv('REPORTERS', "").split(',')]
 
 def get_report_intervals():
-    report_intervals = [int(interval.strip()) for interval in os.getenv('REPORT_INTERVALS', "").split(',')] 
+    report_intervals = [int(interval) for interval in os.getenv('REPORT_INTERVALS', "").split(',') if interval != ""] 
     reporters_length = len(get_reporters())
     if len(report_intervals) != reporters_length:
         safe_default_time = 30 * 60
