@@ -168,4 +168,4 @@ def get_report_intervals():
     return report_intervals
 
 def get_report_time_margin():
-    return int(os.getenv('REPORT_TIME_MARGIN', 60 * 5))
+    return int(os.getenv('REPORT_TIME_MARGIN', 60 * 1))
