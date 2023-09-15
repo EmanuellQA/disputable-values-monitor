@@ -32,15 +32,26 @@ from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
 from fetch_disputables.Ses import Ses, MockSes
 from fetch_disputables.Slack import Slack, MockSlack
-from fetch_disputables.utils import get_service_notification, get_reporters, get_report_interval
+from fetch_disputables.utils import get_service_notification, get_reporters
+from fetch_disputables.utils import get_report_intervals, get_report_time_margin
 
 from dotenv import load_dotenv
 load_dotenv()
 
-notification_service = get_service_notification()
-reporters = get_reporters()
-reporters_last_timestamp = dict()
-reporters_report_interval = get_report_interval() 
+notification_service: list[str] = get_service_notification()
+reporters: list[str] = get_reporters()
+report_intervals: list[int] = get_report_intervals()
+reporters_time_margin: int = get_report_time_margin()
+
+
+def get_reporters_report_intervals(reporters: list[str], report_intervals: list[int]):
+    reporters_report_intervals = dict()
+    for reporter, interval in zip(reporters, report_intervals):
+        reporters_report_intervals[reporter] = interval
+    return reporters_report_intervals
+
+reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
+reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters, report_intervals)
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -289,7 +300,7 @@ async def start(
 
 
 def update_reporter_last_timestamp(
-    reporters_last_timestamp,
+    reporters_last_timestamp: dict[str, tuple[int, bool]],
     reporter: str,
     new_report_timestamp: int
 ):
@@ -300,18 +311,20 @@ def update_reporter_last_timestamp(
     )
     reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
 
-def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp):
+def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
     from_number, recipients = get_twilio_info()
 
     current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
 
     for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
-        if current_timestamp - last_timestamp <= reporters_report_interval:
+        time_threshold = reporters_report_intervals[reporter] + reporters_time_margin
+        
+        if current_timestamp - last_timestamp <= time_threshold:
             continue
         if alert_sent:
             continue
 
-        minutes = f"{reporters_report_interval // 60} minutes"
+        minutes = f"{time_threshold // 60} minutes"
         subject = f"Reporter stop reporting"
         msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
         handle_notification_service(

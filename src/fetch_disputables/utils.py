@@ -154,7 +154,18 @@ def get_service_notification():
     return [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE', "").split(',')]
 
 def get_reporters():
-    return os.getenv('REPORTERS', "").split(',')
+    return [reporter.strip() for reporter in os.getenv('REPORTERS', "").split(',')]
 
-def get_report_interval():
-    return int(os.getenv('REPORT_INTERVAL', 60 * 15))
+def get_report_intervals():
+    report_intervals = [int(interval.strip()) for interval in os.getenv('REPORT_INTERVALS', "").split(',')] 
+    reporters_length = len(get_reporters())
+    if len(report_intervals) != reporters_length:
+        safe_default_time = 30 * 60
+        log_msg = f"REPORT_INTERVALS for REPORTERS not properly configured, defaulting to {safe_default_time // 60} minutes for each reporter"
+        print(log_msg)
+        get_logger(__name__).warning(log_msg)
+        return [30 * 60 for _ in range(reporters_length)]
+    return report_intervals
+
+def get_report_time_margin():
+    return int(os.getenv('REPORT_TIME_MARGIN', 60 * 5))
