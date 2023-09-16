@@ -52,7 +52,6 @@ jobs:
 
      - name: Start Test Dependencies
        run: |
-         docker compose up -d
          ganache-cli --detach
 
      - name: Run tests
