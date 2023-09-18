@@ -1,4 +1,5 @@
 """Get and parse NewReport events from Fetch oracles."""
+from decimal import *
 import asyncio
 import math
 from dataclasses import dataclass
@@ -612,3 +613,12 @@ def get_block_number_at_timestamp(cfg: TelliotConfig, timestamp: int) -> Optiona
     estimated_block_number = block_a.number + estimated_block_delta
 
     return int(estimated_block_number)
+
+async def update_reporters_pls_balance(reporters: list[str], reporters_pls_balance: dict[str, Decimal]):
+    provider_url = "https://rpc.v4.testnet.pulsechain.com"
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+    for reporter in reporters:
+        balance_wei = w3.eth.getBalance(reporter)
+        balance = Decimal(w3.fromWei(balance_wei, 'ether'))
+        old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
+        reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent) 

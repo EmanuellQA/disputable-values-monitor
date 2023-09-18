@@ -7,6 +7,8 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
+import asyncio
+
 import click
 from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
@@ -167,5 +169,20 @@ def get_report_intervals():
         return [30 * 60 for _ in range(reporters_length)]
     return report_intervals
 
+def get_reporters_balances_thresholds():
+    reporters_threshold = [int(interval) for interval in os.getenv('REPORTERS_BALANCE_THRESHOLD', []).split(',')]
+ 
+    reporters_length = len(get_reporters())
+    if len(reporters_threshold) != reporters_length:
+        safe_default_threshold = 200
+        log_msg = f"REPORTERS_BALANCE_THRESHOLD for REPORTERS not properly configured, defaulting to {safe_default_threshold} PLS for each reporter"
+        print(log_msg)
+        get_logger(__name__).warning(log_msg)
+        return [safe_default_threshold for _ in range(reporters_length)]
+    return reporters_threshold
+
 def get_report_time_margin():
     return int(os.getenv('REPORT_TIME_MARGIN', 60 * 1))
+
+def create_async_task(function, *args, **kwargs):
+    return asyncio.create_task(function(*args, **kwargs))
