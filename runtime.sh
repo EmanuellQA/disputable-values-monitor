@@ -1,6 +1,6 @@
 #!/bin/bash
 source .env
-source vars.example.sh
+#source vars.example.sh
 #
 expect_script=$(expect -c "
 spawn chained add dvm \"$PK\" \"$NETWORK_ID\"
