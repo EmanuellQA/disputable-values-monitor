@@ -170,7 +170,7 @@ def get_report_intervals():
     return report_intervals
 
 def get_reporters_balances_thresholds():
-    reporters_threshold = [int(interval) for interval in os.getenv('REPORTERS_BALANCE_THRESHOLD', []).split(',')]
+    reporters_threshold = [int(interval) for interval in os.getenv('REPORTERS_BALANCE_THRESHOLD', "").split(',') if interval != ""]
  
     reporters_length = len(get_reporters())
     if len(reporters_threshold) != reporters_length:

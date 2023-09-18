@@ -12,6 +12,7 @@ from chained_accounts import ChainedAccount
 from hexbytes import HexBytes
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_core.cli.utils import async_run
+from web3 import Web3
 
 from fetch_disputables import WAIT_PERIOD
 from fetch_disputables.alerts import alert
@@ -24,7 +25,6 @@ from fetch_disputables.data import chain_events
 from fetch_disputables.data import get_events
 from fetch_disputables.data import parse_new_report_event
 from fetch_disputables.data import parse_new_dispute_event
-from fetch_disputables.data import update_reporters_pls_balance
 from fetch_disputables.disputer import dispute
 from fetch_disputables.utils import clear_console
 from fetch_disputables.utils import format_values
@@ -43,27 +43,28 @@ load_dotenv()
 
 notification_service: list[str] = get_service_notification()
 reporters: list[str] = get_reporters()
-report_intervals: list[int] = get_report_intervals()
 reporters_time_margin: int = get_report_time_margin()
 
-reporters_threshold = get_reporters_balances_thresholds()
+def get_reporters_report_intervals(reporters: list[str]):
+    report_intervals: list[int] = get_report_intervals()
 
-def get_reporters_report_intervals(reporters: list[str], report_intervals: list[int]):
     reporters_report_intervals = dict()
     for reporter, interval in zip(reporters, report_intervals):
         reporters_report_intervals[reporter] = interval
     return reporters_report_intervals
 
-def get_reporters_pls_balance_threshold(reporters: list[str], reporters_threshold: list[int]):
+def get_reporters_pls_balance_threshold(reporters: list[str]):
+    reporters_threshold: list[int] = get_reporters_balances_thresholds()
+
     reporters_pls_balance_threshold = dict()
     for reporter, reporter_threshold in zip(reporters, reporters_threshold):
         reporters_pls_balance_threshold[reporter] = Decimal(reporter_threshold)
     return reporters_pls_balance_threshold
 
 reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
-reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters, report_intervals)
+reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters)
 reporters_pls_balance: dict[str, Decimal] = dict()
-reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters, reporters_threshold)
+reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters)
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -363,6 +364,15 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
             f"{msg} - alerts sent - {notification_service}"
         )
         reporters_last_timestamp[reporter] = (last_timestamp, True)
+
+async def update_reporters_pls_balance(reporters: list[str], reporters_pls_balance: dict[str, Decimal]):
+    provider_url = "https://rpc.v4.testnet.pulsechain.com"
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+    for reporter in reporters:
+        balance_wei = w3.eth.getBalance(reporter)
+        balance = Decimal(w3.fromWei(balance_wei, 'ether'))
+        old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
+        reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
 def send_alerts_reporters_balance_for_balance_threshold(
     reporters_pls_balance: dict[str, Decimal],
