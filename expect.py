@@ -7,7 +7,7 @@ load_dotenv()
 
 try:
     # Create a pexpect spawn process for the 'cli' command
-    cli_process = pexpect.spawn('cli -d -a dvm')
+    cli_process = pexpect.spawn('cli -d -a dvm', timeout=3600)
 
     # Start tailing the log.txt file in the background
     tail_process = subprocess.Popen(['tail', '-f', 'log.txt'])
