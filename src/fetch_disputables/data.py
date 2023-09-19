@@ -1,4 +1,5 @@
 """Get and parse NewReport events from Fetch oracles."""
+from decimal import *
 import asyncio
 import math
 from dataclasses import dataclass
