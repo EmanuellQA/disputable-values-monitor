@@ -17,7 +17,7 @@ try:
     cli_process.sendline('')
 
     # Wait for the process to finish
-    cli_process.expect(pexpect.EOF)
+    cli_process.expect(pexpect.EOF, timeout=None)
 
 except Exception as e:
     print(f"An error occurred: {str(e)}")
