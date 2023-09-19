@@ -37,6 +37,7 @@ from fetch_disputables.Slack import Slack, MockSlack
 from fetch_disputables.utils import get_service_notification, get_reporters
 from fetch_disputables.utils import get_report_intervals, get_report_time_margin
 from fetch_disputables.utils import get_reporters_balances_thresholds, create_async_task
+from fetch_disputables.utils import format_new_report_message
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -212,8 +213,16 @@ async def start(
                     )
 
                     if new_dispute.reporter in reporters:
-                        subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {chain_id}"
-                        msg = f"New Dispute Event:\n{new_dispute}"
+                        subject = f"New DVM ALERT - New Dispute against Reporter {new_dispute.reporter}"
+                        msg = (
+                            f"- Dispute Tx link: {new_dispute.link}\n"
+                            f"- Dispute ID: {new_dispute.dispute_id}\n"
+                            f"- Query ID: {new_dispute.query_id}\n"
+                            f"- Timestamp: {new_dispute.timestamp}\n"
+                            f"- Reporter: {new_dispute.reporter}\n"
+                            f"- Initiator: {new_dispute.initiator}\n"
+                            f"- Chain ID: {new_dispute.chain_id}"
+                        )
                         handle_notification_service(
                             subject=subject,
                             msg=msg,
@@ -257,8 +266,8 @@ async def start(
                     click.echo("...Now with auto-disputing!")
 
                 handle_notification_service(
-                    subject=f"New Report Event on Chain {chain_id}",
-                    msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
+                    subject="New DVM ALERT - New Report",
+                    msg=format_new_report_message(new_report),
                     notification_service=notification_service,
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
                     ses=ses,
@@ -270,8 +279,12 @@ async def start(
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
                         handle_notification_service(
-                            subject=f"Dispute Successful on Chain {chain_id}",
-                            msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}\nReport:\n{new_report}",
+                            subject="New DVM ALERT - Auto-Disputer began a dispute",
+                            msg=(
+                                f"- {success_msg}\n"
+                                "\nAuto-Disputed Report:\n"
+                                f"{format_new_report_message(new_report)}"
+                            ),
                             notification_service=notification_service,
                             sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
                             ses=ses,
@@ -350,7 +363,7 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
             continue
 
         minutes = f"{time_threshold // 60} minutes"
-        subject = f"Reporter stop reporting"
+        subject = "New DVM ALERT - Reporter stop reporting"
         msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
         handle_notification_service(
             subject=subject,
@@ -384,8 +397,11 @@ def send_alerts_reporters_balance_for_balance_threshold(
         if pls_balance >= reporters_pls_balance_threshold[reporter]: continue
         if alert_sent: continue
 
-        subject = f"Reporter balance threshold met"
-        msg = f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\nCurrent PLS balance: {pls_balance}"
+        subject = "New DVM ALERT - Reporter balance threshold met"
+        msg = (
+            f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\n"
+            f"Current PLS balance: {pls_balance}"
+        )
         handle_notification_service(
             subject=subject,
             msg=msg,

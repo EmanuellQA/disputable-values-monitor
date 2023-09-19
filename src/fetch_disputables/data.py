@@ -467,6 +467,7 @@ async def parse_new_report_event(
     new_report.asset = getattr(q, "asset", "N/A")
     new_report.currency = getattr(q, "currency", "N/A")
     new_report.reporter = event_data.args._reporter
+    new_report.contract_address = event_data.address
 
     try:
         new_report.value = q.value_type.decode(event_data.args._value)
