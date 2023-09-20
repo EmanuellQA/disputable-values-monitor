@@ -18,4 +18,4 @@ RUN pip install -r requirements.txt
 #RUN /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.dev.json /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.json
 
 # Specify the command to run when the container starts
-CMD [ "bash", "runtime.sh" ]
+#CMD [ "bash", "runtime.sh" ] #Uncomment this line if you want to test locally
