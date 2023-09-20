@@ -28,4 +28,5 @@ expect eof
 echo "$expect_script" | expect
 sleep 2
 pip install pexpect
+touch log.txt
 python expect.py
