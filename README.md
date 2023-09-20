@@ -29,6 +29,9 @@ cp .env.example .env
 ```
 
 ```
+ENV_NAME=<default|dev|staging|preprod|prod>
+NETWORK_ID=<369|943>
+PK=<privatekey>
 # Twilio
 MOCK_TWILIO=true # uses the mock server for twilio
 TWILIO_AUTH_TOKEN=
@@ -73,7 +76,7 @@ Note that to use the "sms" service in the `NOTIFICATION_SERVICE` service list re
 - Install Python 3.9
 - Create an account on [twilio](https://www.twilio.com/docs/sms/quickstart/python)
 
-## Install 
+## Install Locally
 
 To install the dvm use the command below:
 
@@ -88,6 +91,24 @@ After installing dvm, check if the venv is activated. If not, activate with the 
 source venv/bin/activate
 
 ```
+
+
+## Install dockerize
+
+To install the dvm use the command below:
+
+```bash!
+./install.sh
+
+```
+
+Build an image and run the image build
+
+```bash!
+docker build -t dvm .
+docker run dvm
+```
+
 
 ### Update environment variables:
 ```bash
