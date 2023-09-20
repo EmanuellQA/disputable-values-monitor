@@ -2,6 +2,8 @@
 
 python3 change_address.py
 cat "/usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.${ENV_NAME}.json"
+python3 change_disputer_config.py
+cat "/app/disputer-config.yaml"
 
 #Set Volume Mounts as Environment Variable
 token_file_path="/mnt/twilio-auth-token/dvm-${ENV_NAME}-twilio-auth-token"
