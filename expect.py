@@ -7,7 +7,7 @@ load_dotenv()
 
 try:
     # Create a pexpect spawn process for the 'cli' command
-    cli_process = pexpect.spawn('cli -d -a dvm', timeout=3600)
+    cli_process = pexpect.spawn('cli -d -a dvm')
 
     # Start tailing the log.txt file in the background
     tail_process = subprocess.Popen(['tail', '-f', 'log.txt'])
@@ -17,7 +17,7 @@ try:
     cli_process.sendline('')
 
     # Wait for the process to finish
-    cli_process.expect(pexpect.EOF)
+    cli_process.expect(pexpect.EOF, timeout=None)
 
 except Exception as e:
     print(f"An error occurred: {str(e)}")
