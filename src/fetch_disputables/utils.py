@@ -76,6 +76,7 @@ class NewReport:
     disputable: Optional[bool] = None
     status_str: str = ""
     reporter: str = ""
+    contract_address: str = ""
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -186,3 +187,18 @@ def get_report_time_margin():
 
 def create_async_task(function, *args, **kwargs):
     return asyncio.create_task(function(*args, **kwargs))
+
+def format_new_report_message(new_report: NewReport):
+    return (
+        f"- Tx link: {new_report.link}\n"
+        f"- Query type: {new_report.query_type}\n"
+        f"- Query ID: {new_report.query_id}\n"
+        f"- Timestamp: {new_report.submission_timestamp}\n"
+        f"- Reporter: {new_report.reporter}\n"
+        f"- Contract Address: {new_report.contract_address}\n"
+        f"- Asset: {new_report.asset}\n"
+        f"- Currency: {new_report.currency}\n"
+        f"- Value: {new_report.value}\n"
+        f"- Disputable: {new_report.disputable}\n"
+        f"- Chain ID: {new_report.chain_id}"
+    )
