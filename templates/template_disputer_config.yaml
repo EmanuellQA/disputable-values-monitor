@@ -1,0 +1,10 @@
+# AutoDisputer configuration file
+feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
+  - query_id: "0x88e6984af423a49262b7d87ef9bc8746ef10def1a819961984e15372b6e1e4ad"
+    threshold:
+      type: Percentage
+      amount: {{ threshold_amount }}
+  - query_id: "0x83245f6a6a2f6458558a706270fbcc35ac3a81917602c1313d3bfa998dcc2d4b"
+    threshold:
+      type: Percentage
+      amount: {{ threshold_amount }}
