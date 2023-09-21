@@ -10,7 +10,7 @@ token_file_path="/mnt/twilio-auth-token/dvm-${ENV_NAME}-twilio-auth-token"
 sid_file_path="/mnt/twilio-account-sid/dvm-${ENV_NAME}-twilio-account-sid"
 pk_file_path="/mnt/private-key/dvm-${ENV_NAME}-private-key"
 aws_access_key_file_path="/mnt/ses-aws-access-key/dvm-${ENV_NAME}-ses-aws-access-key"
-aws_secret_access_key_file_path="/mnt/ses-aws-secreet-access-key/dvm-${ENV_NAME}-ses-aws-secret-access-key"
+aws_secret_access_key_file_path="/mnt/ses-aws-secret-access-key/dvm-${ENV_NAME}-ses-aws-secret-access-key"
 
 token_file_contents=$(cat "$token_file_path")
 sid_file_contents=$(cat "$sid_file_path")
