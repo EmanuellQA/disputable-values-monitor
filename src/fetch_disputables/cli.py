@@ -64,7 +64,7 @@ def get_reporters_pls_balance_threshold(reporters: list[str]):
 
 reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
 reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters)
-reporters_pls_balance: dict[str, Decimal] = dict()
+reporters_pls_balance: dict[str, tuple[Decimal, bool]] = dict()
 reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters)
 
 warnings.simplefilter("ignore", UserWarning)
@@ -121,7 +121,6 @@ async def start(
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
-    cfg.main.chain_id = 943
     disp_cfg = AutoDisputerConfig()
     print_title_info()
 
@@ -378,8 +377,11 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
         )
         reporters_last_timestamp[reporter] = (last_timestamp, True)
 
-async def update_reporters_pls_balance(reporters: list[str], reporters_pls_balance: dict[str, Decimal]):
-    provider_url = "https://rpc.v4.testnet.pulsechain.com"
+async def update_reporters_pls_balance(
+    reporters: list[str],
+    reporters_pls_balance: dict[str, tuple[Decimal, bool]],
+):
+    provider_url = "https://rpc.v4.testnet.pulsechain.com" if os.getenv("NETWORK_ID", "943") == "943" else "https://rpc.pulsechain.com"
     w3 = Web3(Web3.HTTPProvider(provider_url))
     for reporter in reporters:
         balance_wei = w3.eth.getBalance(reporter)
@@ -388,7 +390,7 @@ async def update_reporters_pls_balance(reporters: list[str], reporters_pls_balan
         reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
 def send_alerts_reporters_balance_for_balance_threshold(
-    reporters_pls_balance: dict[str, Decimal],
+    reporters_pls_balance: dict[str, tuple[Decimal, bool]],
     reporters_pls_balance_threshold: dict[str, Decimal]
 ):
     from_number, recipients = get_twilio_info()
@@ -400,7 +402,7 @@ def send_alerts_reporters_balance_for_balance_threshold(
         subject = "New DVM ALERT - Reporter balance threshold met"
         msg = (
             f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\n"
-            f"Current PLS balance: {pls_balance}"
+            f"Current PLS balance: {pls_balance} in network ID {os.getenv('NETWORK_ID', '943')}"
         )
         handle_notification_service(
             subject=subject,
