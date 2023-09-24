@@ -1,6 +1,4 @@
 #!/bin/bash
-sleep 10
-
 python3 change_address.py
 cat "/usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.${ENV_NAME}.json"
 python3 change_disputer_config.py
