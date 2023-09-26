@@ -32,7 +32,7 @@ from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
-from fetch_disputables.Ses import Ses, MockSes
+from fetch_disputables.Ses import Ses, MockSes, TeamSes
 from fetch_disputables.Slack import Slack, MockSlack
 from fetch_disputables.utils import get_service_notification, get_reporters
 from fetch_disputables.utils import get_report_intervals, get_report_time_margin
@@ -75,6 +75,7 @@ price_aggregator_logger.handlers = [
 
 logger = get_logger(__name__)
 ses = None
+team_ses = None
 slack = None
 
 
@@ -100,7 +101,8 @@ def print_title_info() -> None:
 @async_run
 async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
-    global ses, slack
+    global ses, slack, team_ses
+    team_ses = TeamSes()
     if "email" in notification_service:
         ses = MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values)
 
@@ -288,6 +290,7 @@ async def start(
                             sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
                             ses=ses,
                             slack=slack,
+                            team_ses=team_ses
                         )
 
                 display_rows.append(

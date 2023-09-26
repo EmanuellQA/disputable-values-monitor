@@ -140,8 +140,14 @@ def handle_notification_service(
     ses: Union[Ses, None],
     slack: Union[Slack, None],
     new_report: NewReport = None,
+    team_ses: Union[Ses, None] = None
 ) -> List[str]:
-    results = {"sms": None, "email": None, "slack": None}
+    results = {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": team_ses.send_email(subject=subject, msg=msg) if team_ses != None else None
+    }
     if "sms" in notification_service:
         results["sms"] = sms_message_function()
     if "email" in notification_service:

@@ -18,14 +18,12 @@ class Ses:
             region_name=os.getenv('AWS_REGION'),
         ))
         self.source = os.getenv('AWS_SOURCE_EMAIL')
-        self.destination = os.getenv('AWS_DESTINATION_EMAILS').split(',')
+        self.destination = os.getenv('AWS_DESTINATION_EMAILS', "").split(',')
         self.all_values = all_values
 
-    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
-        if new_report and not self.all_values and not new_report.disputable:
-            return
-        
-        send_args = {
+    def get_send_args(self, subject: str, msg: str) -> dict:
+        msg = msg.replace("\n", "<br>")
+        return {
             'Source': self.source,
             'Destination': {
                 'ToAddresses': self.destination,
@@ -35,7 +33,13 @@ class Ses:
             'Message': {
                 'Subject': {'Data': subject},
                 'Body': {'Text': {'Data': msg}, 'Html': {'Data': msg}}}
-        }
+        }        
+
+    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
+        if new_report and not self.all_values and not new_report.disputable:
+            return
+        
+        send_args = self.get_send_args(subject, msg)
         try:
             response = self.ses.send_email(**send_args)
             logger.info(f"Email sent! Message ID: {response['MessageId']}")
@@ -43,6 +47,21 @@ class Ses:
         except ClientError:
             logger.error(
                 f"Failed to send email from {self.source} to {self.destination}")
+
+class TeamSes(Ses):
+    def __init__(self) -> None:
+        super().__init__(all_values=True)
+        self.destination = os.getenv('AWS_TEAM_EMAILS', "").split(',')
+
+    def send_email(self, subject: str, msg: str) -> dict:
+        send_args = self.get_send_args(subject, msg)
+        try:
+            response = self.ses.send_email(**send_args)
+            logger.info(f"Team email sent! Message ID: {response['MessageId']}")
+            return response
+        except ClientError:
+            logger.error(
+                f"Failed to send team email from {self.source} to {self.destination}")
 
 class MockSes():
     def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
