@@ -1,4 +1,4 @@
-name: 'disputable-values-monitor'
+name: 'Image Builder'
 
 on:
   push:
