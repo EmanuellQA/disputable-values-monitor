@@ -170,29 +170,18 @@ def get_report_intervals():
         return [30 * 60 for _ in range(reporters_length)]
     return report_intervals
 
-def get_reporters_balances_thresholds():
-    reporters_threshold = [int(interval) for interval in os.getenv('REPORTERS_BALANCE_THRESHOLD', "").split(',') if interval != ""]
+def get_env_reporters_balance_threshold(env_variable_name: str):
+    reporters_threshold = [int(interval) for interval in os.getenv(env_variable_name, "").split(',') if interval != ""]
  
     reporters_length = len(get_reporters())
     if len(reporters_threshold) != reporters_length:
+        asset = 'FETCH' if env_variable_name == 'REPORTERS_FETCH_BALANCE_THRESHOLD' else 'PLS'
         safe_default_threshold = 200
-        log_msg = f"REPORTERS_BALANCE_THRESHOLD for REPORTERS not properly configured, defaulting to {safe_default_threshold} PLS for each reporter"
+        log_msg = f"{env_variable_name} for REPORTERS not properly configured, defaulting to {safe_default_threshold} {asset} for each reporter"
         print(log_msg)
         get_logger(__name__).warning(log_msg)
         return [safe_default_threshold for _ in range(reporters_length)]
     return reporters_threshold
-
-def get_reporters_fetch_balances_thresholds():
-    reporters_thresholds = [int(interval) for interval in os.getenv('REPORTERS_FETCH_BALANCE_THRESHOLD', "").split(',') if interval != ""]
-
-    reporters_length = len(get_reporters())
-    if len(reporters_thresholds) != reporters_length:
-        safe_default_threshold = 200
-        log_msg = f"REPORTERS_FETCH_BALANCE_THRESHOLD for REPORTERS not properly configured, defaulting to {safe_default_threshold} FETCH for each reporter"
-        print(log_msg)
-        get_logger(__name__).warning(log_msg)
-        return [safe_default_threshold for _ in range(reporters_length)]
-    return reporters_thresholds
 
 def get_report_time_margin():
     return int(os.getenv('REPORT_TIME_MARGIN', 60 * 1))
