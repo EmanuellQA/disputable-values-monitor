@@ -36,8 +36,10 @@ from fetch_disputables.Ses import Ses, MockSes, TeamSes
 from fetch_disputables.Slack import Slack, MockSlack
 from fetch_disputables.utils import get_service_notification, get_reporters
 from fetch_disputables.utils import get_report_intervals, get_report_time_margin
-from fetch_disputables.utils import get_reporters_balances_thresholds, create_async_task
+from fetch_disputables.utils import get_reporters_balances_thresholds, get_reporters_fetch_balances_thresholds
+from fetch_disputables.utils import create_async_task
 from fetch_disputables.utils import format_new_report_message
+from fetch_disputables.data import get_reporter_fetch_balance
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -62,10 +64,20 @@ def get_reporters_pls_balance_threshold(reporters: list[str]):
         reporters_pls_balance_threshold[reporter] = Decimal(reporter_threshold)
     return reporters_pls_balance_threshold
 
+def get_reporters_fetch_balance_threshold(reporters: list[str]):
+    reporters_threshold: list[int] = get_reporters_fetch_balances_thresholds()
+
+    reporters_fetch_balance_threshold = dict()
+    for reporter, reporter_threshold in zip(reporters, reporters_threshold):
+        reporters_fetch_balance_threshold[reporter] = Decimal(reporter_threshold)
+    return reporters_fetch_balance_threshold
+
 reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
 reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters)
 reporters_pls_balance: dict[str, tuple[Decimal, bool]] = dict()
 reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters)
+reporters_fetch_balance: dict[str, tuple[Decimal, bool]] = dict()
+reporters_fetch_balance_threshold: dict[str, Decimal] = get_reporters_fetch_balance_threshold(reporters)
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -123,6 +135,7 @@ async def start(
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
+    cfg.main.chain_id = int(os.getenv("NETWORK_ID", "943"))
     disp_cfg = AutoDisputerConfig()
     print_title_info()
 
@@ -185,6 +198,19 @@ async def start(
             lambda future_obj: send_alerts_reporters_balance_for_balance_threshold(
                 reporters_pls_balance,
                 reporters_pls_balance_threshold
+            )
+        )
+
+        reporters_fetch_balance_task = create_async_task(
+            update_reporters_fetch_balance,
+            cfg,
+            reporters,
+            reporters_fetch_balance
+        )
+        reporters_fetch_balance_task.add_done_callback(
+            lambda future_obj: send_alerts_reporters_balance_for_fetch_balance_threshold(
+                reporters_fetch_balance,
+                reporters_fetch_balance_threshold
             )
         )
 
@@ -392,6 +418,16 @@ async def update_reporters_pls_balance(
         old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
         reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
+async def update_reporters_fetch_balance(
+    cfg: TelliotConfig,
+    reporters: list[str],
+    reporters_fetch_balance: dict[str, tuple[Decimal, bool]],
+):
+    for reporter in reporters:
+        old_fetch_balance, alert_sent = reporters_fetch_balance.get(reporter, (0, False))
+        reporter_fetch_balance = await get_reporter_fetch_balance(cfg, reporter)
+        reporters_fetch_balance[reporter] = (reporter_fetch_balance, reporter_fetch_balance == old_fetch_balance and alert_sent)
+
 def send_alerts_reporters_balance_for_balance_threshold(
     reporters_pls_balance: dict[str, tuple[Decimal, bool]],
     reporters_pls_balance_threshold: dict[str, Decimal]
@@ -402,7 +438,7 @@ def send_alerts_reporters_balance_for_balance_threshold(
         if pls_balance >= reporters_pls_balance_threshold[reporter]: continue
         if alert_sent: continue
 
-        subject = "New DVM ALERT - Reporter balance threshold met"
+        subject = "New DVM ALERT - Reporter PLS balance threshold met"
         msg = (
             f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\n"
             f"Current PLS balance: {pls_balance} in network ID {os.getenv('NETWORK_ID', '943')}"
@@ -419,6 +455,34 @@ def send_alerts_reporters_balance_for_balance_threshold(
             f"{msg} - alerts sent - {notification_service}"
         )
         reporters_pls_balance[reporter] = (pls_balance, True)
+
+def send_alerts_reporters_balance_for_fetch_balance_threshold(
+    reporters_fetch_balance: dict[str, tuple[Decimal, bool]],
+    reporters_fetch_balance_threshold: dict[str, Decimal]
+):
+    from_number, recipients = get_twilio_info()
+
+    for reporter, (fetch_balance, alert_sent) in reporters_fetch_balance.items():
+        if fetch_balance >= reporters_fetch_balance_threshold[reporter]: continue
+        if alert_sent: continue
+
+        subject = "New DVM ALERT - Reporter FETCH balance threshold met"
+        msg = (
+            f"Reporter {reporter} FETCH balance is less than {reporters_fetch_balance_threshold[reporter]}\n"
+            f"Current FETCH balance: {fetch_balance} in network ID {os.getenv('NETWORK_ID', '943')}"
+        )
+        handle_notification_service(
+            subject=subject,
+            msg=msg,
+            notification_service=notification_service,
+            sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
+            ses=ses,
+            slack=slack,
+        )
+        logger.info(
+            f"{msg} - alerts sent - {notification_service}"
+        )
+        reporters_fetch_balance[reporter] = (fetch_balance, True)
 
 if __name__ == "__main__":
     main()

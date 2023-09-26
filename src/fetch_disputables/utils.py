@@ -182,6 +182,18 @@ def get_reporters_balances_thresholds():
         return [safe_default_threshold for _ in range(reporters_length)]
     return reporters_threshold
 
+def get_reporters_fetch_balances_thresholds():
+    reporters_thresholds = [int(interval) for interval in os.getenv('REPORTERS_FETCH_BALANCE_THRESHOLD', "").split(',') if interval != ""]
+
+    reporters_length = len(get_reporters())
+    if len(reporters_thresholds) != reporters_length:
+        safe_default_threshold = 200
+        log_msg = f"REPORTERS_FETCH_BALANCE_THRESHOLD for REPORTERS not properly configured, defaulting to {safe_default_threshold} FETCH for each reporter"
+        print(log_msg)
+        get_logger(__name__).warning(log_msg)
+        return [safe_default_threshold for _ in range(reporters_length)]
+    return reporters_thresholds
+
 def get_report_time_margin():
     return int(os.getenv('REPORT_TIME_MARGIN', 60 * 1))
 
