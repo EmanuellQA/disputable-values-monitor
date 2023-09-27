@@ -278,6 +278,7 @@ async def log_loop(web3: Web3, chain_id: int, addr: str, topics: list[str]) -> l
     if topics[0] == Topics.NEW_DISPUTE:
         from_block = disputes_start_block.get(chain_id, block_number - inital_block_offset)
         from_block -= 10
+    from_block = max(from_block, 0)
     event_filter = mk_filter(from_block, block_number, addr, topics)
 
     try:
