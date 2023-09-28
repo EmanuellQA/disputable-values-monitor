@@ -46,13 +46,12 @@ class MockClient(TwilioHttpClient):
             'http': 'http://127.0.0.1:4010',
             'https': 'http://127.0.0.1:4010'
         })
-        response = session.send(
-            prepped_request,
-            allow_redirects=allow_redirects,
-            timeout=timeout,
-        )
 
-        return Response(int(response.status_code), response.text)
+        response_text = '{"body":"string","num_segments":"string","direction":"inbound","from":"string","to":"string","date_updated":"string","price":"string","error_message":"string","uri":"string","account_sid":"stringstringstringstringstringstri","num_media":"string","status":"queued","messaging_service_sid":"stringstringstringstringstringstri","sid":"stringstringstringstringstringstri","date_sent":"string","date_created":"string","error_code":0,"price_unit":"string","api_version":"string","subresource_uris":{},"tags":"null"}'
+        return Response(
+            int("201"),
+            response_text
+        )
 
 def generic_alert(recipients: List[str], from_number: str, msg: str) -> None:
     """Send a text message to the given recipients."""
@@ -112,11 +111,11 @@ def generate_alert_msg(disputable: bool, link: str) -> str:
 
 def get_twilio_client() -> Client:
     """Get a Twilio client."""
-    if os.environ.get("MOCK_TWILIO") == "true":
+    if os.environ.get("MOCK_TWILIO", "true") == "true":
         print("Using Twilio MockClient on port 4010")
         return Client(
-            os.environ.get("TWILIO_ACCOUNT_SID"),
-            os.environ.get("TWILIO_AUTH_TOKEN"),
+            "AC33333333333333333333333333333333",
+            "33333333333333333333333333333333",
             http_client=MockClient()
         )
     return Client(os.environ.get("TWILIO_ACCOUNT_SID"), os.environ.get("TWILIO_AUTH_TOKEN"))
@@ -140,12 +139,19 @@ def handle_notification_service(
     sms_message_function,
     ses: Union[Ses, None],
     slack: Union[Slack, None],
+    new_report: NewReport = None,
+    team_ses: Union[Ses, None] = None
 ) -> List[str]:
-    results = {"sms": None, "email": None, "slack": None}
+    results = {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": team_ses.send_email(subject=subject, msg=msg) if team_ses != None else None
+    }
     if "sms" in notification_service:
         results["sms"] = sms_message_function()
     if "email" in notification_service:
-        results["email"] = ses.send_email(subject=subject, msg=msg)
+        results["email"] = ses.send_email(subject=subject, msg=msg, new_report=new_report)
     if "slack" in notification_service:
-        results["slack"] = slack.send_message(subject=subject, msg=msg)
+        results["slack"] = slack.send_message(subject=subject, msg=msg, new_report=new_report)
     return results

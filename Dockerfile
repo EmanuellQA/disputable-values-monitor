@@ -1,25 +1,21 @@
-FROM python:3.9.17-slim-bullseye
+# Use the official Python 3.10 image as the base image
+FROM python:3.10
 
-#install dependencies for build pip packages
-RUN apt-get update && apt-get install -y protobuf-compiler gcc libc-dev linux-headers-generic expect
+RUN apt-get update && \
+    apt-get install -y vim expect
+    # Set the working directory inside the container
+WORKDIR /app
 
-#install jinja2
-RUN pip3 install --no-cache-dir Jinja2==3.1.2
-
-#copy telliot core and change_address script
-WORKDIR /usr/src/app/telliot-core
-COPY ./telliot-feeds/telliot-core .
-RUN pip install -e .
-COPY ./change_address.py .
-
-#copy telliot feeds
-WORKDIR /usr/src/app/telliot-feeds
-COPY ./telliot-feeds .
-RUN pip install -e .
-
-#copy dvm
-WORKDIR /usr/src/app/disputable-values-monitor
+# Copy the contents of the local "app" directory to the container's working directory
 COPY . .
-ENV PYTHONPATH=${PYTHONPATH}:${PWD}
+# Set the environment variable within the Dockerfile
 
-COPY ./podinit.sh .
+# Run the install.sh script inside the container
+RUN pip install .
+RUN pip install -r requirements.txt
+#RUN python -c "import telliot_core; print(f'telliot-core version installed - {telliot_core.__version__}')"
+#RUN python -c "import telliot_feeds; print(f'telliot-feeds version installed - {telliot_feeds.__version__}')"
+#RUN /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.dev.json /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.json
+
+# Specify the command to run when the container starts
+#CMD [ "bash", "runtime.sh" ] #Uncomment this line if you want to test locally

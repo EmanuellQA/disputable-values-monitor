@@ -7,16 +7,21 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
+import asyncio
+
 import click
 from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_feeds.utils.cfg import setup_account
 
+from dotenv import load_dotenv
+load_dotenv()
 
 def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
     explorer: str = cfg.get_endpoint().explorer
+    if explorer is not None and explorer[-1] != "/": explorer += "/"
     if explorer is not None:
         return explorer + "tx/" + tx_hash
     else:
@@ -70,6 +75,8 @@ class NewReport:
     query_id: str = ""
     disputable: Optional[bool] = None
     status_str: str = ""
+    reporter: str = ""
+    contract_address: str = ""
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -145,3 +152,53 @@ def format_values(val: Any) -> Any:
         return f"{str(val)[:6]}...{str(val)[-5:]}"
     else:
         return val
+
+def get_service_notification():
+    return [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE', "").split(',')]
+
+def get_reporters():
+    return [reporter.strip() for reporter in os.getenv('REPORTERS', "").split(',')]
+
+def get_report_intervals():
+    report_intervals = [int(interval) for interval in os.getenv('REPORT_INTERVALS', "").split(',') if interval != ""] 
+    reporters_length = len(get_reporters())
+    if len(report_intervals) != reporters_length:
+        safe_default_time = 30 * 60
+        log_msg = f"REPORT_INTERVALS for REPORTERS not properly configured, defaulting to {safe_default_time // 60} minutes for each reporter"
+        print(log_msg)
+        get_logger(__name__).warning(log_msg)
+        return [30 * 60 for _ in range(reporters_length)]
+    return report_intervals
+
+def get_reporters_balances_thresholds():
+    reporters_threshold = [int(interval) for interval in os.getenv('REPORTERS_BALANCE_THRESHOLD', "").split(',') if interval != ""]
+ 
+    reporters_length = len(get_reporters())
+    if len(reporters_threshold) != reporters_length:
+        safe_default_threshold = 200
+        log_msg = f"REPORTERS_BALANCE_THRESHOLD for REPORTERS not properly configured, defaulting to {safe_default_threshold} PLS for each reporter"
+        print(log_msg)
+        get_logger(__name__).warning(log_msg)
+        return [safe_default_threshold for _ in range(reporters_length)]
+    return reporters_threshold
+
+def get_report_time_margin():
+    return int(os.getenv('REPORT_TIME_MARGIN', 60 * 1))
+
+def create_async_task(function, *args, **kwargs):
+    return asyncio.create_task(function(*args, **kwargs))
+
+def format_new_report_message(new_report: NewReport):
+    return (
+        f"- Tx link: {new_report.link}\n"
+        f"- Query type: {new_report.query_type}\n"
+        f"- Query ID: {new_report.query_id}\n"
+        f"- Timestamp: {new_report.submission_timestamp}\n"
+        f"- Reporter: {new_report.reporter}\n"
+        f"- Contract Address: {new_report.contract_address}\n"
+        f"- Asset: {new_report.asset}\n"
+        f"- Currency: {new_report.currency}\n"
+        f"- Value: {new_report.value}\n"
+        f"- Disputable: {new_report.disputable}\n"
+        f"- Chain ID: {new_report.chain_id}"
+    )

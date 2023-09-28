@@ -2,6 +2,7 @@
 import logging
 import warnings
 from time import sleep
+from decimal import *
 
 import os
 
@@ -11,6 +12,7 @@ from chained_accounts import ChainedAccount
 from hexbytes import HexBytes
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_core.cli.utils import async_run
+from web3 import Web3
 
 from fetch_disputables import WAIT_PERIOD
 from fetch_disputables.alerts import alert
@@ -30,14 +32,40 @@ from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import select_account
 from fetch_disputables.utils import Topics
-from fetch_disputables.Ses import Ses
-from fetch_disputables.Slack import Slack
+from fetch_disputables.Ses import Ses, MockSes, TeamSes
+from fetch_disputables.Slack import Slack, MockSlack
+from fetch_disputables.utils import get_service_notification, get_reporters
+from fetch_disputables.utils import get_report_intervals, get_report_time_margin
+from fetch_disputables.utils import get_reporters_balances_thresholds, create_async_task
+from fetch_disputables.utils import format_new_report_message
 
 from dotenv import load_dotenv
 load_dotenv()
 
-notification_service = [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE').split(',')]
-reporters = os.getenv('REPORTERS').split(',')
+notification_service: list[str] = get_service_notification()
+reporters: list[str] = get_reporters()
+reporters_time_margin: int = get_report_time_margin()
+
+def get_reporters_report_intervals(reporters: list[str]):
+    report_intervals: list[int] = get_report_intervals()
+
+    reporters_report_intervals = dict()
+    for reporter, interval in zip(reporters, report_intervals):
+        reporters_report_intervals[reporter] = interval
+    return reporters_report_intervals
+
+def get_reporters_pls_balance_threshold(reporters: list[str]):
+    reporters_threshold: list[int] = get_reporters_balances_thresholds()
+
+    reporters_pls_balance_threshold = dict()
+    for reporter, reporter_threshold in zip(reporters, reporters_threshold):
+        reporters_pls_balance_threshold[reporter] = Decimal(reporter_threshold)
+    return reporters_pls_balance_threshold
+
+reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
+reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters)
+reporters_pls_balance: dict[str, tuple[Decimal, bool]] = dict()
+reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters)
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -46,8 +74,9 @@ price_aggregator_logger.handlers = [
 ]
 
 logger = get_logger(__name__)
-ses = Ses() if "email" in notification_service else None
-slack = Slack() if "slack" in notification_service else None
+ses = None
+team_ses = None
+slack = None
 
 
 def print_title_info() -> None:
@@ -72,6 +101,14 @@ def print_title_info() -> None:
 @async_run
 async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
+    global ses, slack, team_ses
+    team_ses = TeamSes()
+    if "email" in notification_service:
+        ses = MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values)
+
+    if "slack" in notification_service:
+        slack = MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values)
+
     await start(
         all_values=all_values,
         wait=wait,
@@ -86,7 +123,6 @@ async def start(
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
-    cfg.main.chain_id = 943
     disp_cfg = AutoDisputerConfig()
     print_title_info()
 
@@ -137,6 +173,21 @@ async def start(
             topics=[Topics.NEW_DISPUTE],
         )
         event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
+
+        send_alerts_when_reporters_stops_reporting(reporters_last_timestamp)
+
+        reporters_pls_balance_task = create_async_task(
+            update_reporters_pls_balance,
+            reporters,
+            reporters_pls_balance
+        )
+        reporters_pls_balance_task.add_done_callback(
+            lambda future_obj: send_alerts_reporters_balance_for_balance_threshold(
+                reporters_pls_balance,
+                reporters_pls_balance_threshold
+            )
+        )
+
         for event_list in event_lists:
             # event_list = [(80001, EXAMPLE_NEW_REPORT_EVENT)]
             if not event_list:
@@ -163,8 +214,16 @@ async def start(
                     )
 
                     if new_dispute.reporter in reporters:
-                        subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {chain_id}"
-                        msg = f"New Dispute Event:\n{new_dispute}"
+                        subject = f"New DVM ALERT - New Dispute against Reporter {new_dispute.reporter}"
+                        msg = (
+                            f"- Dispute Tx link: {new_dispute.link}\n"
+                            f"- Dispute ID: {new_dispute.dispute_id}\n"
+                            f"- Query ID: {new_dispute.query_id}\n"
+                            f"- Timestamp: {new_dispute.timestamp}\n"
+                            f"- Reporter: {new_dispute.reporter}\n"
+                            f"- Initiator: {new_dispute.initiator}\n"
+                            f"- Chain ID: {new_dispute.chain_id}"
+                        )
                         handle_notification_service(
                             subject=subject,
                             msg=msg,
@@ -193,6 +252,13 @@ async def start(
                     continue
                 displayed_events.add(new_report.tx_hash)
 
+                if new_report.reporter in reporters:
+                    update_reporter_last_timestamp(
+                        reporters_last_timestamp,
+                        new_report.reporter,
+                        new_report.submission_timestamp
+                    )
+    
                 # Refesh
                 clear_console()
                 print_title_info()
@@ -201,24 +267,30 @@ async def start(
                     click.echo("...Now with auto-disputing!")
 
                 handle_notification_service(
-                    subject=f"New Report Event on Chain {chain_id}",
-                    msg=f"New Report Event on Chain {chain_id}:\n{new_report}",
+                    subject="New DVM ALERT - New Report",
+                    msg=format_new_report_message(new_report),
                     notification_service=notification_service,
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
                     ses=ses,
                     slack=slack,
+                    new_report=new_report
                 )
 
                 if is_disputing and new_report.disputable:
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
                         handle_notification_service(
-                            subject=f"Dispute Successful on Chain {chain_id}",
-                            msg=f"Dispute Successful on Chain {chain_id}:\n{success_msg}",
+                            subject="New DVM ALERT - Auto-Disputer began a dispute",
+                            msg=(
+                                f"- {success_msg}\n"
+                                "\nAuto-Disputed Report:\n"
+                                f"{format_new_report_message(new_report)}"
+                            ),
                             notification_service=notification_service,
                             sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
                             ses=ses,
                             slack=slack,
+                            team_ses=team_ses
                         )
 
                 display_rows.append(
@@ -266,6 +338,87 @@ async def start(
 
         sleep(wait)
 
+
+def update_reporter_last_timestamp(
+    reporters_last_timestamp: dict[str, tuple[int, bool]],
+    reporter: str,
+    new_report_timestamp: int
+):
+    timestamp, alert_sent = reporters_last_timestamp.get(reporter, (0, False))
+    last_timestamp = max(
+        timestamp,
+        new_report_timestamp
+    )
+    reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
+
+def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
+    from_number, recipients = get_twilio_info()
+
+    current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+
+    for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
+        time_threshold = reporters_report_intervals[reporter] + reporters_time_margin
+        
+        if current_timestamp - last_timestamp <= time_threshold:
+            continue
+        if alert_sent:
+            continue
+
+        minutes = f"{time_threshold // 60} minutes"
+        subject = "New DVM ALERT - Reporter stop reporting"
+        msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
+        handle_notification_service(
+            subject=subject,
+            msg=msg,
+            notification_service=notification_service,
+            sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
+            ses=ses,
+            slack=slack,
+        )
+        logger.info(
+            f"{msg} - alerts sent - {notification_service}"
+        )
+        reporters_last_timestamp[reporter] = (last_timestamp, True)
+
+async def update_reporters_pls_balance(
+    reporters: list[str],
+    reporters_pls_balance: dict[str, tuple[Decimal, bool]],
+):
+    provider_url = "https://rpc.v4.testnet.pulsechain.com" if os.getenv("NETWORK_ID", "943") == "943" else "https://rpc.pulsechain.com"
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+    for reporter in reporters:
+        balance_wei = w3.eth.getBalance(reporter)
+        balance = Decimal(w3.fromWei(balance_wei, 'ether'))
+        old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
+        reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
+
+def send_alerts_reporters_balance_for_balance_threshold(
+    reporters_pls_balance: dict[str, tuple[Decimal, bool]],
+    reporters_pls_balance_threshold: dict[str, Decimal]
+):
+    from_number, recipients = get_twilio_info()
+
+    for reporter, (pls_balance, alert_sent) in reporters_pls_balance.items():
+        if pls_balance >= reporters_pls_balance_threshold[reporter]: continue
+        if alert_sent: continue
+
+        subject = "New DVM ALERT - Reporter balance threshold met"
+        msg = (
+            f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\n"
+            f"Current PLS balance: {pls_balance} in network ID {os.getenv('NETWORK_ID', '943')}"
+        )
+        handle_notification_service(
+            subject=subject,
+            msg=msg,
+            notification_service=notification_service,
+            sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
+            ses=ses,
+            slack=slack,
+        )
+        logger.info(
+            f"{msg} - alerts sent - {notification_service}"
+        )
+        reporters_pls_balance[reporter] = (pls_balance, True)
 
 if __name__ == "__main__":
     main()

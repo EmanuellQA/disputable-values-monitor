@@ -1,4 +1,5 @@
 """Get and parse NewReport events from Fetch oracles."""
+from decimal import *
 import asyncio
 import math
 from dataclasses import dataclass
@@ -277,6 +278,7 @@ async def log_loop(web3: Web3, chain_id: int, addr: str, topics: list[str]) -> l
     if topics[0] == Topics.NEW_DISPUTE:
         from_block = disputes_start_block.get(chain_id, block_number - inital_block_offset)
         from_block -= 10
+    from_block = max(from_block, 0)
     event_filter = mk_filter(from_block, block_number, addr, topics)
 
     try:
@@ -465,6 +467,8 @@ async def parse_new_report_event(
     new_report.submission_timestamp = event_data.args._time  # in unix time
     new_report.asset = getattr(q, "asset", "N/A")
     new_report.currency = getattr(q, "currency", "N/A")
+    new_report.reporter = event_data.args._reporter
+    new_report.contract_address = event_data.address
 
     try:
         new_report.value = q.value_type.decode(event_data.args._value)

@@ -29,6 +29,9 @@ cp .env.example .env
 ```
 
 ```
+ENV_NAME=<default|dev|staging|preprod|prod>
+NETWORK_ID=<369|943>
+PK=<privatekey>
 # Twilio
 MOCK_TWILIO=true # uses the mock server for twilio
 TWILIO_AUTH_TOKEN=
@@ -64,25 +67,52 @@ REPORTERS="0x0000000000000000000000000000000000000000,0x000000000000000000000000
 
 Note that to use the "sms" service in the `NOTIFICATION_SERVICE` service list requires a Twilio `.env` configuration, likewise, the "slack" service requires a SLACK_WEBHOOK_URL, and AWS SES environment config for the "email" service.
 
-```bash!
-./install.sh
-source venv/bin/activate
-mv venv/lib/python3.9/site-packages/vars.example.sh vars.sh
-mv venv/lib/python3.9/site-packages/disputer-config.yaml disputer-config.yaml
-chained add <name of new account> <private key> <chain id(s) separated by spaces>
-# before proceeding, add environment variables to vars.sh
-source vars.sh
-cli -d  # the d is for dispute!
-```
+
+
+
 ## Setup
 
 ### Prerequisites:
 - Install Python 3.9
 - Create an account on [twilio](https://www.twilio.com/docs/sms/quickstart/python)
 
+## Install Locally
+
+To install the dvm use the command below:
+
+```bash!
+./install.sh
+
+```
+
+After installing dvm, check if the venv is activated. If not, activate with the command below:
+
+```bash!
+source venv/bin/activate
+
+```
+
+
+## Install dockerize
+
+To install the dvm use the command below:
+
+```bash!
+./install.sh
+
+```
+
+Build an image and run the image build
+
+```bash!
+docker build -t dvm .
+docker run dvm
+```
+
+
 ### Update environment variables:
 ```bash
-mv venv/lib/python3.9/site-packages/vars.example.sh vars.sh
+cp vars.example.sh vars.sh
 ```
 Edit `vars.sh`:
 - List phone numbers you want alerts sent to (`ALERT_RECIPIENTS`).
@@ -113,11 +143,7 @@ You can list as many chains as you'd like.
 
 ### Configuring Tresholds
 
-Monitored Feeds and their Thresholds are defined in the `disputer-config.yaml` file. You can move the config file to your current directory with
-```
-mv venv/lib/python3.9/site-packages/disputer-config.yaml disputer-config.yaml
-```
-
+Monitored Feeds and their Thresholds are defined in the `disputer-config.yaml` file. 
 
 By default, the auto-disputer will monitor the ETH/USD feed on any chain id with a threshold Percentage threshold of 75%. In the default `dipsuter-config.yaml`, attached to the project, this is represented as:
 
