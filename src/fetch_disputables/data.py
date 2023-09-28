@@ -615,3 +615,14 @@ def get_block_number_at_timestamp(cfg: TelliotConfig, timestamp: int) -> Optiona
     estimated_block_number = block_a.number + estimated_block_delta
 
     return int(estimated_block_number)
+
+async def get_reporter_fetch_balance(cfg: TelliotConfig, reporter: str):
+    fetch_token = get_contract(cfg, name="fetch-token", account=None)
+    reporter_fetch_balance, status = await fetch_token.read("balanceOf", Web3.toChecksumAddress(reporter))
+
+    w3 = cfg.get_endpoint().web3
+    reporter_fetch_balance = Decimal(w3.fromWei(reporter_fetch_balance, 'ether'))
+    if not status.ok:
+        logger.error(f"Unable to retrieve Reporter {reporter} account balance")
+        return None
+    return reporter_fetch_balance

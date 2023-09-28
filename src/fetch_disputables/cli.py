@@ -36,8 +36,10 @@ from fetch_disputables.Ses import Ses, MockSes, TeamSes
 from fetch_disputables.Slack import Slack, MockSlack
 from fetch_disputables.utils import get_service_notification, get_reporters
 from fetch_disputables.utils import get_report_intervals, get_report_time_margin
-from fetch_disputables.utils import get_reporters_balances_thresholds, create_async_task
+from fetch_disputables.utils import get_env_reporters_balance_threshold
+from fetch_disputables.utils import create_async_task
 from fetch_disputables.utils import format_new_report_message
+from fetch_disputables.data import get_reporter_fetch_balance
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -48,24 +50,29 @@ reporters_time_margin: int = get_report_time_margin()
 
 def get_reporters_report_intervals(reporters: list[str]):
     report_intervals: list[int] = get_report_intervals()
+    return {reporter: interval for reporter, interval in zip(reporters, report_intervals)}
 
-    reporters_report_intervals = dict()
-    for reporter, interval in zip(reporters, report_intervals):
-        reporters_report_intervals[reporter] = interval
-    return reporters_report_intervals
-
-def get_reporters_pls_balance_threshold(reporters: list[str]):
-    reporters_threshold: list[int] = get_reporters_balances_thresholds()
-
-    reporters_pls_balance_threshold = dict()
-    for reporter, reporter_threshold in zip(reporters, reporters_threshold):
-        reporters_pls_balance_threshold[reporter] = Decimal(reporter_threshold)
-    return reporters_pls_balance_threshold
+def get_reporters_balance_threshold(reporters: list[str], env_variable_name: str):
+    reporters_threshold: list[int] = get_env_reporters_balance_threshold(env_variable_name=env_variable_name)
+    return {reporter: Decimal(reporter_threshold) for reporter, reporter_threshold in zip(reporters, reporters_threshold)}
 
 reporters_last_timestamp: dict[str, tuple[int, bool]] = dict()
 reporters_report_intervals: dict[str, int] = get_reporters_report_intervals(reporters)
-reporters_pls_balance: dict[str, tuple[Decimal, bool]] = dict()
-reporters_pls_balance_threshold: dict[str, Decimal] = get_reporters_pls_balance_threshold(reporters)
+
+ReportersBalance = dict[str, tuple[Decimal, bool]]
+ReportersBalanceThreshold = dict[str, Decimal]
+
+reporters_pls_balance: ReportersBalance = dict()
+reporters_pls_balance_threshold: ReportersBalanceThreshold = get_reporters_balance_threshold(
+    reporters=reporters,
+    env_variable_name="REPORTERS_PLS_BALANCE_THRESHOLD"
+)
+
+reporters_fetch_balance: ReportersBalance = dict()
+reporters_fetch_balance_threshold: ReportersBalanceThreshold = get_reporters_balance_threshold(
+    reporters=reporters,
+    env_variable_name="REPORTERS_FETCH_BALANCE_THRESHOLD"
+)
 
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
@@ -123,6 +130,7 @@ async def start(
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
+    cfg.main.chain_id = int(os.getenv("NETWORK_ID", "943"))
     disp_cfg = AutoDisputerConfig()
     print_title_info()
 
@@ -182,9 +190,24 @@ async def start(
             reporters_pls_balance
         )
         reporters_pls_balance_task.add_done_callback(
-            lambda future_obj: send_alerts_reporters_balance_for_balance_threshold(
-                reporters_pls_balance,
-                reporters_pls_balance_threshold
+            lambda future_obj: alert_reporters_balance_threshold(
+                reporters_balance=reporters_pls_balance,
+                reporters_balance_threshold=reporters_pls_balance_threshold,
+                asset="PLS"
+            )
+        )
+
+        reporters_fetch_balance_task = create_async_task(
+            update_reporters_fetch_balance,
+            cfg,
+            reporters,
+            reporters_fetch_balance
+        )
+        reporters_fetch_balance_task.add_done_callback(
+            lambda future_obj: alert_reporters_balance_threshold(
+                reporters_balance=reporters_fetch_balance,
+                reporters_balance_threshold=reporters_fetch_balance_threshold,
+                asset="FETCH"
             )
         )
 
@@ -392,20 +415,31 @@ async def update_reporters_pls_balance(
         old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
         reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
-def send_alerts_reporters_balance_for_balance_threshold(
-    reporters_pls_balance: dict[str, tuple[Decimal, bool]],
-    reporters_pls_balance_threshold: dict[str, Decimal]
+async def update_reporters_fetch_balance(
+    cfg: TelliotConfig,
+    reporters: list[str],
+    reporters_fetch_balance: dict[str, tuple[Decimal, bool]],
+):
+    for reporter in reporters:
+        old_fetch_balance, alert_sent = reporters_fetch_balance.get(reporter, (0, False))
+        reporter_fetch_balance = await get_reporter_fetch_balance(cfg, reporter)
+        reporters_fetch_balance[reporter] = (reporter_fetch_balance, reporter_fetch_balance == old_fetch_balance and alert_sent)
+
+def alert_reporters_balance_threshold(
+    reporters_balance: ReportersBalance,
+    reporters_balance_threshold: ReportersBalanceThreshold,
+    asset: str
 ):
     from_number, recipients = get_twilio_info()
 
-    for reporter, (pls_balance, alert_sent) in reporters_pls_balance.items():
-        if pls_balance >= reporters_pls_balance_threshold[reporter]: continue
+    for reporter, (balance, alert_sent) in reporters_balance.items():
+        if balance >= reporters_balance_threshold[reporter]: continue
         if alert_sent: continue
 
-        subject = "New DVM ALERT - Reporter balance threshold met"
+        subject = f"New DVM ALERT - Reporter {asset} balance threshold met"
         msg = (
-            f"Reporter {reporter} PLS balance is less than {reporters_pls_balance_threshold[reporter]}\n"
-            f"Current PLS balance: {pls_balance} in network ID {os.getenv('NETWORK_ID', '943')}"
+            f"Reporter {reporter} {asset} balance is less than {reporters_balance_threshold[reporter]}\n"
+            f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}"
         )
         handle_notification_service(
             subject=subject,
@@ -418,7 +452,7 @@ def send_alerts_reporters_balance_for_balance_threshold(
         logger.info(
             f"{msg} - alerts sent - {notification_service}"
         )
-        reporters_pls_balance[reporter] = (pls_balance, True)
+        reporters_balance[reporter] = (balance, True)
 
 if __name__ == "__main__":
     main()
