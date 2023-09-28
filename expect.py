@@ -1,13 +1,18 @@
 import pexpect
 import subprocess
 from dotenv import load_dotenv
+import os
 
 # Load environment variables from the .env file
 load_dotenv()
+enable_autodispute = os.environ.get("ENABLE_AUTODISPUTE")
 
 try:
     # Create a pexpect spawn process for the 'cli' command
-    cli_process = pexpect.spawn('cli -d -a dvm', timeout=None)
+    if enable_autodispute == 'true':
+        cli_process = pexpect.spawn('cli -d -a dvm', timeout=None)
+    elif enable_autodispute == 'false':
+        cli_process = pexpect.spawn('cli -a dvm', timeout=None)
 
     # Start tailing the log.txt file in the background
     tail_process = subprocess.Popen(['tail', '-f', 'log.txt'])
