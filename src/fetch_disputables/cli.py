@@ -136,8 +136,12 @@ async def start(
 
     from_number, recipients = get_twilio_info()
     if from_number is None or recipients is None:
-        logger.error("Missing phone numbers. See README for required environment variables. Exiting.")
-        return
+        if "sms" in notification_service:
+            msg = "Missing phone numbers. See README for TWILIO required environment variables. Exiting."
+            logger.error(msg)
+            print(f"Error - {msg}")
+            return
+        logger.warning("TWILIO environment variables not configured")
 
     if not disp_cfg.monitored_feeds:
         logger.error("No feeds set for monitoring, please add feeds to ./disputer-config.yaml")
