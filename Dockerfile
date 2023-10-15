@@ -2,7 +2,7 @@
 FROM python:3.10
 
 RUN apt-get update && \
-    apt-get install -y vim expect
+    apt-get install -y vim
     # Set the working directory inside the container
 WORKDIR /app
 
