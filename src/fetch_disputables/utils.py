@@ -8,6 +8,7 @@ from typing import Optional
 from typing import Union
 
 import asyncio
+from web3 import Web3
 
 import click
 from chained_accounts import ChainedAccount
@@ -157,7 +158,8 @@ def get_service_notification():
     return [service.lower().strip() for service in os.getenv('NOTIFICATION_SERVICE', "").split(',')]
 
 def get_reporters():
-    return [reporter.strip() for reporter in os.getenv('REPORTERS', "").split(',')]
+    reporters = [reporter.strip() for reporter in os.getenv('REPORTERS', "").split(',')]
+    return [Web3.toChecksumAddress(reporter) for reporter in reporters if reporter != ""]
 
 def get_report_intervals():
     report_intervals = [int(interval) for interval in os.getenv('REPORT_INTERVALS', "").split(',') if interval != ""] 
