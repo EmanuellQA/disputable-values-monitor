@@ -10,6 +10,7 @@ with open('./templates/template_contract_directory.json', 'r') as template_file:
 template_env = Environment(loader=FileSystemLoader(searchpath='./'))
 template = template_env.from_string(template_data)
 rendered_data = template.render(
+    os=os,
     autopay_address=os.environ["AUTOPAY_ADDRESS"],
     fetchflex_address=os.environ["FETCHFLEX_ADDRESS"],
     fetch_token=os.environ["FETCHTOKEN_ADDRESS"],
