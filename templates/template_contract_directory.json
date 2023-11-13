@@ -166,7 +166,8 @@
     "name": "fetch-governance",
     "org": "fetch",
     "address": {
-      "943": "{{ fetch_governance }}"
+      "943": "{{ fetch_governance if (os.environ.get('ENV_NAME') != 'mainnet') else '0x000' }}",
+      "369": "{{ fetch_governance if (os.environ.get('ENV_NAME') == 'mainnet') else '0x000' }}"
     },
     "abi_file": "fetch-governance-abi.json"
   },
