@@ -241,7 +241,7 @@ async def start(
                     )
 
                     if new_dispute.reporter in reporters:
-                        subject = f"New DVM ALERT - New Dispute against Reporter {new_dispute.reporter}"
+                        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Dispute against Reporter {new_dispute.reporter}"
                         msg = (
                             f"- Dispute Tx link: {new_dispute.link}\n"
                             f"- Dispute ID: {new_dispute.dispute_id}\n"
@@ -294,7 +294,7 @@ async def start(
                     click.echo("...Now with auto-disputing!")
 
                 handle_notification_service(
-                    subject="New DVM ALERT - New Report",
+                    subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Report",
                     msg=format_new_report_message(new_report),
                     notification_service=notification_service,
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
@@ -307,7 +307,7 @@ async def start(
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
                         handle_notification_service(
-                            subject="New DVM ALERT - Auto-Disputer began a dispute",
+                            subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Auto-Disputer began a dispute",
                             msg=(
                                 f"- {success_msg}\n"
                                 "\nAuto-Disputed Report:\n"
@@ -392,7 +392,7 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
             continue
 
         minutes = f"{time_threshold // 60} minutes"
-        subject = "New DVM ALERT - Reporter stop reporting"
+        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Reporter stop reporting"
         msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
         handle_notification_service(
             subject=subject,
@@ -440,7 +440,7 @@ def alert_reporters_balance_threshold(
         if balance >= reporters_balance_threshold[reporter]: continue
         if alert_sent: continue
 
-        subject = f"New DVM ALERT - Reporter {asset} balance threshold met"
+        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Reporter {asset} balance threshold met"
         msg = (
             f"Reporter {reporter} {asset} balance is less than {reporters_balance_threshold[reporter]}\n"
             f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}"
