@@ -390,6 +390,14 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
     for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
         time_threshold = reporters_report_intervals[reporter] + reporters_time_margin
         
+        logger.debug("In send_alerts_when_reporters_stops_reporting")
+        logger.debug(f"reporter: {reporter}" )
+        logger.debug(f"current_timestamp: {current_timestamp}")
+        logger.debug(f"last_timestamp: {last_timestamp}")
+        logger.debug(f"alert_sent: {alert_sent}")
+        logger.debug(f"time_threshold: {time_threshold}")
+        logger.debug(f"current_timestamp - last_timestamp: {current_timestamp - last_timestamp}")
+        logger.debug(f"current_timestamp - last_timestamp <= time_threshold: {current_timestamp - last_timestamp <= time_threshold}")
         if current_timestamp - last_timestamp <= time_threshold:
             continue
         if alert_sent:
