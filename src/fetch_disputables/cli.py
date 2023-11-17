@@ -249,6 +249,10 @@ async def start(
                             f"- Timestamp: {new_dispute.timestamp}\n"
                             f"- Reporter: {new_dispute.reporter}\n"
                             f"- Initiator: {new_dispute.initiator}\n"
+                            f"- Start date: {new_dispute.startDate}\n"
+                            f"- Vote round: {new_dispute.voteRound}\n"
+                            f"- Fee: {new_dispute.fee}\n"
+                            f"- Vote round length: {new_dispute.voteRoundLength}\n"
                             f"- Chain ID: {new_dispute.chain_id}"
                         )
                         handle_notification_service(

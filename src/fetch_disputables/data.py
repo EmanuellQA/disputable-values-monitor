@@ -420,6 +420,10 @@ async def parse_new_dispute_event(
     new_dispute.query_id = "0x" + event_data.args._queryId.hex()
     new_dispute.initiator = event_data.args._initiator
     new_dispute.timestamp = event_data.args._timestamp
+    new_dispute.startDate = event_data.args._startDate
+    new_dispute.voteRound = event_data.args._voteRound
+    new_dispute.fee = event_data.args._fee
+    new_dispute.voteRoundLength = event_data.args._voteRoundLength
     new_dispute.link = get_tx_explorer_url(tx_hash=new_dispute.tx_hash, cfg=cfg)
 
     return new_dispute

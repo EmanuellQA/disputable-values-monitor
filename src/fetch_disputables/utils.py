@@ -43,8 +43,8 @@ class Topics:
     NEW_PROPOSED_ORACLE_ADDRESS: str = (
         "0x8fe6b09081e9ffdaf91e337aba6769019098771106b34b194f1781b7db1bf42b"  # oracle.NewProposedOracleAddress
     )
-    # Keccak256("NewDispute(uint256,bytes32,uint256,address,address)")
-    NEW_DISPUTE: str = "0xfb173db1d03c427e32a0cd1772db1992fc65a383a802057ce24c3b619e65e8bd"
+    # Keccak256("NewDispute(uint256,bytes32,uint256,address,address,uint256,uint256,uint256,uint256)")
+    NEW_DISPUTE: str = "0xfbfeca72a80efb0d1aabf7f937aaec719fa5c81548a4ade65b40ecdec0afca4e"
 
 
 @dataclass
