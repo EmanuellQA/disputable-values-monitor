@@ -241,7 +241,7 @@ async def start(
                     )
 
                     if new_dispute.reporter in reporters:
-                        subject = f"New DVM ALERT - New Dispute against Reporter {new_dispute.reporter}"
+                        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Dispute against Reporter {new_dispute.reporter}"
                         msg = (
                             f"- Dispute Tx link: {new_dispute.link}\n"
                             f"- Dispute ID: {new_dispute.dispute_id}\n"
@@ -249,6 +249,10 @@ async def start(
                             f"- Timestamp: {new_dispute.timestamp}\n"
                             f"- Reporter: {new_dispute.reporter}\n"
                             f"- Initiator: {new_dispute.initiator}\n"
+                            f"- Start date: {new_dispute.startDate}\n"
+                            f"- Vote round: {new_dispute.voteRound}\n"
+                            f"- Fee: {new_dispute.fee}\n"
+                            f"- Vote round length: {new_dispute.voteRoundLength}\n"
                             f"- Chain ID: {new_dispute.chain_id}"
                         )
                         handle_notification_service(
@@ -294,7 +298,7 @@ async def start(
                     click.echo("...Now with auto-disputing!")
 
                 handle_notification_service(
-                    subject="New DVM ALERT - New Report",
+                    subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Report",
                     msg=format_new_report_message(new_report),
                     notification_service=notification_service,
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
@@ -307,7 +311,7 @@ async def start(
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
                         handle_notification_service(
-                            subject="New DVM ALERT - Auto-Disputer began a dispute",
+                            subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Auto-Disputer began a dispute",
                             msg=(
                                 f"- {success_msg}\n"
                                 "\nAuto-Disputed Report:\n"
@@ -386,13 +390,21 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
     for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
         time_threshold = reporters_report_intervals[reporter] + reporters_time_margin
         
+        logger.debug("In send_alerts_when_reporters_stops_reporting")
+        logger.debug(f"reporter: {reporter}" )
+        logger.debug(f"current_timestamp: {current_timestamp}")
+        logger.debug(f"last_timestamp: {last_timestamp}")
+        logger.debug(f"alert_sent: {alert_sent}")
+        logger.debug(f"time_threshold: {time_threshold}")
+        logger.debug(f"current_timestamp - last_timestamp: {current_timestamp - last_timestamp}")
+        logger.debug(f"current_timestamp - last_timestamp <= time_threshold: {current_timestamp - last_timestamp <= time_threshold}")
         if current_timestamp - last_timestamp <= time_threshold:
             continue
         if alert_sent:
             continue
 
         minutes = f"{time_threshold // 60} minutes"
-        subject = "New DVM ALERT - Reporter stop reporting"
+        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Reporter stop reporting"
         msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
         handle_notification_service(
             subject=subject,
@@ -440,7 +452,7 @@ def alert_reporters_balance_threshold(
         if balance >= reporters_balance_threshold[reporter]: continue
         if alert_sent: continue
 
-        subject = f"New DVM ALERT - Reporter {asset} balance threshold met"
+        subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Reporter {asset} balance threshold met"
         msg = (
             f"Reporter {reporter} {asset} balance is less than {reporters_balance_threshold[reporter]}\n"
             f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}"
