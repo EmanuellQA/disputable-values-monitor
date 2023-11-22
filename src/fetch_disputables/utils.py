@@ -205,3 +205,10 @@ def format_new_report_message(new_report: NewReport):
         f"- Disputable: {new_report.disputable}\n"
         f"- Chain ID: {new_report.chain_id}"
     )
+
+class NotificationSources:
+    NEW_DISPUTE_AGAINST_REPORTER = "New Dispute against Reporter"
+    NEW_REPORT = "New Report"
+    AUTO_DISPUTER_BEGAN_A_DISPUTE = "Auto-Disputer began a dispute"
+    REPORTER_STOP_REPORTING = "Reporter stop reporting"
+    REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"

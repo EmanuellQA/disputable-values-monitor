@@ -40,11 +40,74 @@ from fetch_disputables.utils import get_env_reporters_balance_threshold
 from fetch_disputables.utils import create_async_task
 from fetch_disputables.utils import format_new_report_message
 from fetch_disputables.data import get_reporter_fetch_balance
+from fetch_disputables.utils import NotificationSources
 
 from dotenv import load_dotenv
 load_dotenv()
 
 notification_service: list[str] = get_service_notification()
+notification_service_results: dict = {
+    NotificationSources.NEW_DISPUTE_AGAINST_REPORTER: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.NEW_REPORT: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.REPORTER_STOP_REPORTING: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.REPORTER_BALANCE_THRESHOLD: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    }
+} 
 reporters: list[str] = get_reporters()
 reporters_time_margin: int = get_report_time_margin()
 
@@ -255,15 +318,24 @@ async def start(
                             f"- Vote round length: {new_dispute.voteRoundLength}\n"
                             f"- Chain ID: {new_dispute.chain_id}"
                         )
-                        handle_notification_service(
+                        new_dispute_against_reporter_notification_task = create_async_task(
+                            handle_notification_service,
                             subject=subject,
                             msg=msg,
                             notification_service=notification_service,
                             sms_message_function=lambda : dispute_alert(f"{subject}\n{msg}", recipients, from_number),
                             ses=ses,
                             slack=slack,
+                            notification_service_results=notification_service_results,
+                            notification_source=NotificationSources.NEW_DISPUTE_AGAINST_REPORTER
                         )
-                        logger.info(f"New Dispute Event against Reporter - alerts sent - {notification_service}")
+                        new_dispute_against_reporter_notification_task.add_done_callback(
+                            lambda future_obj: notification_task_callback(
+                                msg=f"New Dispute Event against Reporter",
+                                notification_service_results=notification_service_results,
+                                notification_source=NotificationSources.NEW_DISPUTE_AGAINST_REPORTER
+                            )
+                        )
                         new_dispute_events_alerts_sent.add(new_dispute.tx_hash)
                     continue
 
@@ -297,20 +369,31 @@ async def start(
                 if is_disputing:
                     click.echo("...Now with auto-disputing!")
 
-                handle_notification_service(
+                new_report_notification_task = create_async_task(
+                    handle_notification_service,
                     subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Report",
                     msg=format_new_report_message(new_report),
                     notification_service=notification_service,
                     sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
                     ses=ses,
                     slack=slack,
-                    new_report=new_report
+                    new_report=new_report,
+                    notification_service_results=notification_service_results,
+                    notification_source=NotificationSources.NEW_REPORT
+                )
+                new_report_notification_task.add_done_callback(
+                    lambda future_obj: notification_task_callback(
+                        msg=f"New Report",
+                        notification_service_results=notification_service_results,
+                        notification_source=NotificationSources.NEW_REPORT
+                    )
                 )
 
                 if is_disputing and new_report.disputable:
                     success_msg = await dispute(cfg, disp_cfg, account, new_report)
                     if success_msg:
-                        handle_notification_service(
+                        new_dispute_notification_task = create_async_task(
+                            handle_notification_service,
                             subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Auto-Disputer began a dispute",
                             msg=(
                                 f"- {success_msg}\n"
@@ -321,7 +404,16 @@ async def start(
                             sms_message_function=lambda : dispute_alert(success_msg, recipients, from_number),
                             ses=ses,
                             slack=slack,
-                            team_ses=team_ses
+                            team_ses=team_ses,
+                            notification_service_results=notification_service_results,
+                            notification_source=NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE
+                        )
+                        new_dispute_notification_task.add_done_callback(
+                            lambda future_obj: notification_task_callback(
+                                msg=f"Auto-Disputer began a dispute",
+                                notification_service_results=notification_service_results,
+                                notification_source=NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE
+                            )
                         )
 
                 display_rows.append(
@@ -406,16 +498,23 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
         minutes = f"{time_threshold // 60} minutes"
         subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Reporter stop reporting"
         msg = f"Reporter {reporter} has not submitted a report in over {minutes}"
-        handle_notification_service(
+        reporter_stop_reporting_notification_task = create_async_task(
+            handle_notification_service,
             subject=subject,
             msg=msg,
             notification_service=notification_service,
             sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
             ses=ses,
             slack=slack,
+            notification_service_results=notification_service_results,
+            notification_source=NotificationSources.REPORTER_STOP_REPORTING
         )
-        logger.info(
-            f"{msg} - alerts sent - {notification_service}"
+        reporter_stop_reporting_notification_task.add_done_callback(
+            lambda future_obj: notification_task_callback(
+                msg=f"Reporter stop reporting",
+                notification_service_results=notification_service_results,
+                notification_source=NotificationSources.REPORTER_STOP_REPORTING
+            )
         )
         reporters_last_timestamp[reporter] = (last_timestamp, True)
 
@@ -457,18 +556,39 @@ def alert_reporters_balance_threshold(
             f"Reporter {reporter} {asset} balance is less than {reporters_balance_threshold[reporter]}\n"
             f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}"
         )
-        handle_notification_service(
+        reporter_balance_threshold_notification_task = create_async_task(
+            handle_notification_service,
             subject=subject,
             msg=msg,
             notification_service=notification_service,
             sms_message_function=lambda : generic_alert(f"{subject}\n{msg}", recipients, from_number),
             ses=ses,
             slack=slack,
+            notification_service_results=notification_service_results,
+            notification_source=NotificationSources.REPORTER_BALANCE_THRESHOLD
         )
-        logger.info(
-            f"{msg} - alerts sent - {notification_service}"
+        reporter_balance_threshold_notification_task.add_done_callback(
+            lambda future_obj: notification_task_callback(
+                msg=f"Reporter {asset} balance threshold met",
+                notification_service_results=notification_service_results,
+                notification_source=NotificationSources.REPORTER_BALANCE_THRESHOLD
+            )
         )
         reporters_balance[reporter] = (balance, True)
+
+def notification_task_callback(
+    msg: str,
+    notification_service_results: dict,
+    notification_source: str
+):
+    services_notified = []
+    for service, err in notification_service_results[notification_source]['error'].items():
+        if err != None: continue
+        services_notified.append(service)
+
+    logger.info(
+        f"{msg} - alerts sent - {services_notified}"
+    )
 
 if __name__ == "__main__":
     main()

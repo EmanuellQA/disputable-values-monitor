@@ -9,6 +9,7 @@ from fetch_disputables.alerts import handle_notification_service
 from fetch_disputables.utils import NewDispute, get_reporters, get_service_notification
 from fetch_disputables.data import parse_new_dispute_event
 from telliot_core.apps.telliot_config import TelliotConfig
+from fetch_disputables.utils import NotificationSources
 
 from fetch_disputables.Ses import Ses, MockSes
 from fetch_disputables.Slack import Slack, MockSlack
@@ -34,8 +35,8 @@ def local_send_text_msg(client, recipients, from_number, msg):
             body=msg,
         )
 
-
-def test_notification_services_new_dispute_against_reporter():
+@pytest.mark.asyncio
+async def test_notification_services_new_dispute_against_reporter():
     new_dispute = NewDispute(
         tx_hash='0x9999999999999999999999999999999999999999999999999999999999999999',
         timestamp=16904008000,
@@ -67,11 +68,27 @@ def test_notification_services_new_dispute_against_reporter():
     if os.getenv("MOCK_SLACK", "true") == "true":
         notification_service.append("slack")
 
+    notification_source = NotificationSources.NEW_DISPUTE_AGAINST_REPORTER
+    notification_service_results: dict = {
+        notification_source: {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+            "error": {
+                "sms": None,
+                "email": None,
+                "slack": None,
+                "team_email": None,
+            }
+        }
+    }
+
     if new_dispute.reporter in reporters:
         subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {new_dispute.chain_id}"
         msg = f"New Dispute Event:\n{new_dispute}"
 
-        results = handle_notification_service(
+        await handle_notification_service(
             subject=subject,
             msg=msg,
             notification_service=notification_service,
@@ -81,19 +98,23 @@ def test_notification_services_new_dispute_against_reporter():
                 msg=msg
             ),
             ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values=False),
-            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values=False)
+            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values=False),
+            notification_service_results=notification_service_results,
+            notification_source=notification_source
         )
 
         for service in notification_service:
             if service == "sms":
                 if os.getenv("MOCK_TWILIO", "true") == "true":
-                    assert results["sms"].error_code == 0 and results["sms"].direction == 'inbound'
+                    assert notification_service_results[notification_source]["sms"].error_code == 0 \
+                    and notification_service_results[notification_source]["sms"].direction == 'inbound'
                 else:
-                    assert results["sms"].error_code is None and results["sms"].direction == 'outbound-api'
+                    assert notification_service_results[notification_source]["sms"].error_code is None \
+                    and notification_service_results[notification_source]["sms"].direction == 'outbound-api'
             elif service == "email":
-                assert results["email"]['ResponseMetadata']['HTTPStatusCode'] == 200
+                assert notification_service_results[notification_source]["email"]['ResponseMetadata']['HTTPStatusCode'] == 200
             elif service == "slack":
-                assert results["slack"].status_code == 200
+                assert notification_service_results[notification_source]["slack"].status_code == 200
 
 
 def test_notification_services_new_dispute_against_non_reporter():
