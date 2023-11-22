@@ -583,6 +583,7 @@ def notification_task_callback(
 ):
     services_notified = []
     for service, err in notification_service_results[notification_source]['error'].items():
+        if service == "team_email" and notification_source != NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE: continue
         if err != None: continue
         services_notified.append(service)
 
