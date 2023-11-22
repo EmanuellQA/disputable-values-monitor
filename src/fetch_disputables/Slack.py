@@ -40,10 +40,13 @@ class Slack:
                 text="fallback",
                 blocks=blocks
             )
+            if response.body != "ok":
+                raise Exception(f"{response.body}")
             logger.info(f"Slack message sent! response body: {response.body}")
             return response
         except Exception as e:
             logger.error(f"Failed to send slack message: {e}")
+            raise e
 
 class MockSlack():
     def send_message(self, subject: str, msg: str, new_report: NewReport = None):
