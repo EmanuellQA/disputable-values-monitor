@@ -149,14 +149,15 @@ async def handle_notification_service(
     notification_service_results: Union[dict, None] = None,
     notification_source: Union[NotificationSources, None] = None,
 ) -> List[str]:
-    logger.info("Sending team email")
-    try:
-        notification_service_results[notification_source]["team_email"] = team_ses.send_email(subject=subject, msg=msg)
-        notification_service_results[notification_source]["error"]["team_email"] = None
-        logger.info("Team email sent")
-    except Exception as e:
-        notification_service_results[notification_source]["error"]["team_email"] = e
-        logger.error(f"Error sending team email: {e}")
+    if team_ses != None:
+        logger.info("Sending team email")
+        try:
+            notification_service_results[notification_source]["team_email"] = team_ses.send_email(subject=subject, msg=msg)
+            notification_service_results[notification_source]["error"]["team_email"] = None
+            logger.info("Team email sent")
+        except Exception as e:
+            notification_service_results[notification_source]["error"]["team_email"] = e
+            logger.error(f"Error sending team email: {e}")
 
     if "sms" in notification_service:
         logger.info("Sending SMS message")
