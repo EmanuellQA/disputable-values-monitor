@@ -18,9 +18,14 @@ from fetch_disputables.data import NewReport
 from fetch_disputables.Ses import Ses
 from fetch_disputables.Slack import Slack
 
+from fetch_disputables.utils import get_logger
+from fetch_disputables.utils import NotificationSources
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 class MockClient(TwilioHttpClient):
     def __init__(self):
@@ -123,7 +128,6 @@ def get_twilio_client() -> Client:
 
 def send_text_msg(client: Client, recipients: list[str], from_number: str, msg: str) -> None:
     """Send a text message to the recipients."""
-    click.echo("Alert sent!")
     for num in recipients:
         client.messages.create(
             to=num,
@@ -132,7 +136,7 @@ def send_text_msg(client: Client, recipients: list[str], from_number: str, msg: 
         )
 
 
-def handle_notification_service(
+async def handle_notification_service(
     subject: str,
     msg: str,
     notification_service: Union[List[str], None],
@@ -140,18 +144,53 @@ def handle_notification_service(
     ses: Union[Ses, None],
     slack: Union[Slack, None],
     new_report: NewReport = None,
-    team_ses: Union[Ses, None] = None
+    team_ses: Union[Ses, None] = None,
+    notification_service_results: Union[dict, None] = None,
+    notification_source: Union[NotificationSources, None] = None,
 ) -> List[str]:
-    results = {
-        "sms": None,
-        "email": None,
-        "slack": None,
-        "team_email": team_ses.send_email(subject=subject, msg=msg) if team_ses != None else None
-    }
+    if team_ses != None:
+        logger.info(f"Sending team email - {notification_source}")
+        try:
+            notification_service_results[notification_source]["team_email"] = team_ses.send_email(subject=subject, msg=msg)
+            notification_service_results[notification_source]["error"]["team_email"] = None
+            logger.info("Team email sent")
+        except Exception as e:
+            notification_service_results[notification_source]["error"]["team_email"] = e
+            logger.error(f"Error sending team email: {e}")
+
     if "sms" in notification_service:
-        results["sms"] = sms_message_function()
+        logger.info(f"Sending SMS message - {notification_source}")
+        try:
+            sms_response = sms_message_function()
+            if sms_response == None:
+                sms_response = "SMS message sent"
+            notification_service_results[notification_source]["sms"] = sms_response
+            notification_service_results[notification_source]["error"]["sms"] = None
+            logger.info("SMS message sent")
+        except Exception as e:
+            notification_service_results[notification_source]["error"]["sms"] = e
+            logger.error(f"Error sending SMS message: {e}")
+
     if "email" in notification_service:
-        results["email"] = ses.send_email(subject=subject, msg=msg, new_report=new_report)
+        logger.info(f"Sending email - {notification_source}")
+        try:
+            email_response = ses.send_email(subject=subject, msg=msg, new_report=new_report)
+            notification_service_results[notification_source]["email"] = email_response
+            notification_service_results[notification_source]["error"]["email"] = None
+            if email_response != None:
+                logger.info("Email sent")
+        except Exception as e:
+            notification_service_results[notification_source]["error"]["email"] = e
+            logger.error(f"Error sending email: {e}")
+
     if "slack" in notification_service:
-        results["slack"] = slack.send_message(subject=subject, msg=msg, new_report=new_report)
-    return results
+        logger.info(f"Sending slack message - {notification_source}")
+        try:
+            slack_response = slack.send_message(subject=subject, msg=msg, new_report=new_report)
+            notification_service_results[notification_source]["slack"] = slack_response
+            notification_service_results[notification_source]["error"]["slack"] = None
+            if slack_response != None:
+                logger.info("Slack message sent")
+        except Exception as e:
+            notification_service_results[notification_source]["error"]["slack"] = e
+            logger.error(f"Error sending slack message: {e}")

@@ -9,6 +9,7 @@ from fetch_disputables.alerts import handle_notification_service
 from fetch_disputables.utils import NewDispute, get_reporters, get_service_notification
 from fetch_disputables.data import parse_new_dispute_event
 from telliot_core.apps.telliot_config import TelliotConfig
+from fetch_disputables.utils import NotificationSources
 
 from fetch_disputables.Ses import Ses, MockSes
 from fetch_disputables.Slack import Slack, MockSlack
@@ -34,8 +35,8 @@ def local_send_text_msg(client, recipients, from_number, msg):
             body=msg,
         )
 
-
-def test_notification_services_new_dispute_against_reporter():
+@pytest.mark.asyncio
+async def test_notification_services_new_dispute_against_reporter():
     new_dispute = NewDispute(
         tx_hash='0x9999999999999999999999999999999999999999999999999999999999999999',
         timestamp=16904008000,
@@ -67,11 +68,27 @@ def test_notification_services_new_dispute_against_reporter():
     if os.getenv("MOCK_SLACK", "true") == "true":
         notification_service.append("slack")
 
+    notification_source = NotificationSources.NEW_DISPUTE_AGAINST_REPORTER
+    notification_service_results: dict = {
+        notification_source: {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+            "error": {
+                "sms": None,
+                "email": None,
+                "slack": None,
+                "team_email": None,
+            }
+        }
+    }
+
     if new_dispute.reporter in reporters:
         subject = f"New Dispute Event against Reporter {new_dispute.reporter} on Chain {new_dispute.chain_id}"
         msg = f"New Dispute Event:\n{new_dispute}"
 
-        results = handle_notification_service(
+        await handle_notification_service(
             subject=subject,
             msg=msg,
             notification_service=notification_service,
@@ -81,19 +98,23 @@ def test_notification_services_new_dispute_against_reporter():
                 msg=msg
             ),
             ses=MockSes() if os.getenv("MOCK_SES", "true") == "true" else Ses(all_values=False),
-            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values=False)
+            slack=MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values=False),
+            notification_service_results=notification_service_results,
+            notification_source=notification_source
         )
 
         for service in notification_service:
             if service == "sms":
                 if os.getenv("MOCK_TWILIO", "true") == "true":
-                    assert results["sms"].error_code == 0 and results["sms"].direction == 'inbound'
+                    assert notification_service_results[notification_source]["sms"].error_code == 0 \
+                    and notification_service_results[notification_source]["sms"].direction == 'inbound'
                 else:
-                    assert results["sms"].error_code is None and results["sms"].direction == 'outbound-api'
+                    assert notification_service_results[notification_source]["sms"].error_code is None \
+                    and notification_service_results[notification_source]["sms"].direction == 'outbound-api'
             elif service == "email":
-                assert results["email"]['ResponseMetadata']['HTTPStatusCode'] == 200
+                assert notification_service_results[notification_source]["email"]['ResponseMetadata']['HTTPStatusCode'] == 200
             elif service == "slack":
-                assert results["slack"].status_code == 200
+                assert notification_service_results[notification_source]["slack"].status_code == 200
 
 
 def test_notification_services_new_dispute_against_non_reporter():
@@ -119,8 +140,8 @@ async def test_parse_new_dispute_event():
 
     event = AttributeDict({
         'address': '0x9Bf22Fa8C49ef7F9B9a343A39baE002C2f800802',
-        'topics': [HexBytes('0xfb173db1d03c427e32a0cd1772db1992fc65a383a802057ce24c3b619e65e8bd')],
-        'data': '0x000000000000000000000000000000000000000000000000000000000000003b83245f6a6a2f6458558a706270fbcc35ac3a81917602c1313d3bfa998dcc2d4b0000000000000000000000000000000000000000000000000000000064f8853f000000000000000000000000dfe6ba8de9f699d51297931242bd546dd87d486f000000000000000000000000dfe6ba8de9f699d51297931242bd546dd87d486f',
+        'topics': [HexBytes('0xfbfeca72a80efb0d1aabf7f937aaec719fa5c81548a4ade65b40ecdec0afca4e')],
+        'data': '0x000000000000000000000000000000000000000000000000000000000000000183245f6a6a2f6458558a706270fbcc35ac3a81917602c1313d3bfa998dcc2d4b00000000000000000000000000000000000000000000000000000000655792200000000000000000000000005c790a34bd1d00c2355b85001fd036dbb96dc24f0000000000000000000000005c790a34bd1d00c2355b85001fd036dbb96dc24f000000000000000000000000000000000000000000000000000000006557922a00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000c685fa11e01ec6f0000000000000000000000000000000000000000000000000000000000000000000001',
         'blockNumber': 17437647,
         'transactionHash': HexBytes('0x3c189dbc4ad556d5f195813f32b4f61b5787e096f04a543897474c5466ca8e2e'),
         'transactionIndex': 0,
