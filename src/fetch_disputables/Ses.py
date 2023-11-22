@@ -44,9 +44,11 @@ class Ses:
             response = self.ses.send_email(**send_args)
             logger.info(f"Email sent! Message ID: {response['MessageId']}")
             return response
-        except ClientError:
+        except ClientError as e:
             logger.error(
                 f"Failed to send email from {self.source} to {self.destination}")
+            logger.error(f"SES error: {e}")
+            raise e
 
 class TeamSes(Ses):
     def __init__(self) -> None:
@@ -59,9 +61,11 @@ class TeamSes(Ses):
             response = self.ses.send_email(**send_args)
             logger.info(f"Team email sent! Message ID: {response['MessageId']}")
             return response
-        except ClientError:
+        except ClientError as e:
             logger.error(
                 f"Failed to send team email from {self.source} to {self.destination}")
+            logger.error(f"SES error: {e}")
+            raise e
 
 class MockSes():
     def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:

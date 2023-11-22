@@ -111,7 +111,11 @@ NEW_DISPUTE_ABI = {
         {"indexed": False, "internalType": "bytes32", "name": "_queryId", "type": "bytes32"},
         {"indexed": False, "internalType": "uint256", "name": "_timestamp", "type": "uint256"},
         {"indexed": False, "internalType": "address", "name": "_reporter", "type": "address"},
-        {"indexed": False, "internalType": "address", "name": "_initiator", "type": "address"}
+        {"indexed": False, "internalType": "address", "name": "_initiator", "type": "address"},
+        {"indexed": False, "internalType": "uint256", "name": "_startDate", "type": "uint256"},
+        {"indexed": False, "internalType": "uint256", "name": "_voteRound", "type": "uint256"},
+        {"indexed": False, "internalType": "uint256", "name": "_fee", "type": "uint256"},
+        {"indexed": False, "internalType": "uint256", "name": "_voteRoundLength", "type": "uint256"}
     ],
     "name": "NewDispute",
     "type": "event"
