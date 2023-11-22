@@ -128,7 +128,6 @@ def get_twilio_client() -> Client:
 
 def send_text_msg(client: Client, recipients: list[str], from_number: str, msg: str) -> None:
     """Send a text message to the recipients."""
-    click.echo("Alert sent!")
     for num in recipients:
         client.messages.create(
             to=num,
@@ -150,7 +149,7 @@ async def handle_notification_service(
     notification_source: Union[NotificationSources, None] = None,
 ) -> List[str]:
     if team_ses != None:
-        logger.info("Sending team email")
+        logger.info(f"Sending team email - {notification_source}")
         try:
             notification_service_results[notification_source]["team_email"] = team_ses.send_email(subject=subject, msg=msg)
             notification_service_results[notification_source]["error"]["team_email"] = None
@@ -160,7 +159,7 @@ async def handle_notification_service(
             logger.error(f"Error sending team email: {e}")
 
     if "sms" in notification_service:
-        logger.info("Sending SMS message")
+        logger.info(f"Sending SMS message - {notification_source}")
         try:
             sms_response = sms_message_function()
             if sms_response == None:
@@ -169,25 +168,29 @@ async def handle_notification_service(
             notification_service_results[notification_source]["error"]["sms"] = None
             logger.info("SMS message sent")
         except Exception as e:
-            notification_service_results["error"]["sms"] = e
+            notification_service_results[notification_source]["error"]["sms"] = e
             logger.error(f"Error sending SMS message: {e}")
 
     if "email" in notification_service:
-        logger.info("Sending email")
+        logger.info(f"Sending email - {notification_source}")
         try:
-            notification_service_results[notification_source]["email"] = ses.send_email(subject=subject, msg=msg, new_report=new_report)
+            email_response = ses.send_email(subject=subject, msg=msg, new_report=new_report)
+            notification_service_results[notification_source]["email"] = email_response
             notification_service_results[notification_source]["error"]["email"] = None
-            logger.info("Email sent")
+            if email_response != None:
+                logger.info("Email sent")
         except Exception as e:
             notification_service_results[notification_source]["error"]["email"] = e
             logger.error(f"Error sending email: {e}")
 
     if "slack" in notification_service:
-        logger.info("Sending slack message")
+        logger.info(f"Sending slack message - {notification_source}")
         try:
-            notification_service_results[notification_source]["slack"] = slack.send_message(subject=subject, msg=msg, new_report=new_report)
+            slack_response = slack.send_message(subject=subject, msg=msg, new_report=new_report)
+            notification_service_results[notification_source]["slack"] = slack_response
             notification_service_results[notification_source]["error"]["slack"] = None
-            logger.info("Slack message sent")
+            if slack_response != None:
+                logger.info("Slack message sent")
         except Exception as e:
             notification_service_results[notification_source]["error"]["slack"] = e
             logger.error(f"Error sending slack message: {e}")
