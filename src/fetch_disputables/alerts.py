@@ -162,7 +162,10 @@ async def handle_notification_service(
     if "sms" in notification_service:
         logger.info("Sending SMS message")
         try:
-            notification_service_results[notification_source]["sms"] = sms_message_function()
+            sms_response = sms_message_function()
+            if sms_response == None:
+                sms_response = "SMS message sent"
+            notification_service_results[notification_source]["sms"] = sms_response
             notification_service_results[notification_source]["error"]["sms"] = None
             logger.info("SMS message sent")
         except Exception as e:

@@ -582,10 +582,12 @@ def notification_task_callback(
     notification_source: str
 ):
     services_notified = []
-    for service, err in notification_service_results[notification_source]['error'].items():
-        if service == "team_email" and notification_source != NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE: continue
-        if err != None: continue
-        services_notified.append(service)
+    notification_result = notification_service_results[notification_source]
+    for key in notification_result:
+        if key == "error": continue
+        if key == "team_email" and notification_source != NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE: continue
+        if notification_result[key] == None or notification_result["error"][key] != None: continue
+        services_notified.append(key)
 
     logger.info(
         f"{msg} - alerts sent - {services_notified}"
