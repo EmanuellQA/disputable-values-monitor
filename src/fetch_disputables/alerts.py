@@ -129,11 +129,16 @@ def get_twilio_client() -> Client:
 def send_text_msg(client: Client, recipients: list[str], from_number: str, msg: str) -> None:
     """Send a text message to the recipients."""
     for num in recipients:
-        client.messages.create(
-            to=num,
-            from_=from_number,
-            body=msg,
-        )
+        logger.info(f"Sending SMS to {num}")
+        try:
+            client.messages.create(
+                to=num,
+                from_=from_number,
+                body=msg,
+            )
+            logger.info(f"SMS sent to {num} successfully")
+        except Exception as e:
+            logger.error(f"Error sending SMS to {num}: {e}")
 
 
 async def handle_notification_service(
