@@ -109,9 +109,9 @@ def generate_alert_msg(disputable: bool, link: str) -> str:
     includes a link to a relevant expolorer."""
 
     if disputable:
-        return f"\n❗DISPUTABLE VALUE❗\n{link}"
+        return f"\n!!DISPUTABLE VALUE!!\n{link}"
     else:
-        return f"\n❗NEW VALUE❗\n{link}"
+        return f"\n!!NEW VALUE!!\n{link}"
 
 
 def get_twilio_client() -> Client:
