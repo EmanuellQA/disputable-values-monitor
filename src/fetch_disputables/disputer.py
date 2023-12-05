@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 async def dispute(
-    cfg: TelliotConfig, disp_cfg: AutoDisputerConfig, account: Optional[ChainedAccount], new_report: NewReport
+    cfg: TelliotConfig, disp_cfg: AutoDisputerConfig, account: Optional[ChainedAccount], new_report: NewReport, gas_multiplier: int = 1
 ) -> str:
     """Main dispute logic for auto-disputer"""
 
@@ -105,7 +105,7 @@ async def dispute(
         spender=governance.address,
         amount=dispute_fee * 100,
         gas_limit=60000,
-        legacy_gas_price=w3.fromWei(w3.eth.gas_price, "gwei"),
+        legacy_gas_price=get_gas_price(w3, gas_multiplier),
         acc_nonce=acc_nonce,
     )
 
@@ -136,7 +136,7 @@ async def dispute(
         _queryId=new_report.query_id,
         _timestamp=new_report.submission_timestamp,
         gas_limit=int(gas_limit * 1.2),
-        legacy_gas_price=w3.fromWei(w3.eth.gas_price, "gwei"),
+        legacy_gas_price=get_gas_price(w3, gas_multiplier),
         acc_nonce=acc_nonce + 1,
     )
 
@@ -158,6 +158,23 @@ async def dispute(
     logger.info("Dispute Tx Link: " + dispute_tx_link)
     return "Dispute Tx Link: " + dispute_tx_link
 
+def get_gas_price(web3, gas_multiplier) -> Optional[float]:
+    """Fetches the current gas price from an EVM network and returns
+    an adjusted gas price.
+
+    Returns:
+        An optional float representing the adjusted gas price in gwei, or
+        None if the gas price could not be retrieved.
+    """
+    try:
+        price = web3.eth.gas_price
+        priceGwei = web3.fromWei(price, "gwei")
+    except Exception as e:
+        logger.error(f"Error fetching gas price: {e}")
+        return None
+    multiplier = 1.0 + (gas_multiplier / 100.0)
+    gas_price = (float(priceGwei) * multiplier) if priceGwei else None
+    return gas_price
 
 async def get_dispute_fee(cfg: TelliotConfig, new_report: NewReport) -> Optional[int]:
     """Calculate dispute fee on a Fetch network"""
