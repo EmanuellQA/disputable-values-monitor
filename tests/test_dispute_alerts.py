@@ -4,7 +4,6 @@ import os
 import pytest
 from hexbytes import HexBytes
 
-from telliot_core.model.endpoints import RPCEndpoint
 from fetch_disputables.alerts import get_twilio_client
 from fetch_disputables.alerts import handle_notification_service
 from fetch_disputables.utils import NewDispute, get_reporters, get_service_notification
