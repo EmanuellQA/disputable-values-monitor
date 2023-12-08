@@ -55,7 +55,7 @@ jobs:
          ganache-cli --detach
 
      - name: Run tests
-       run: pytest
+       run: pytest -s
 
      - name: Obtain Commit SHA
        if: always()
