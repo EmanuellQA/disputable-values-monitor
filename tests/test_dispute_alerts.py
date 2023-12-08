@@ -137,9 +137,9 @@ def test_notification_services_new_dispute_against_non_reporter():
 @pytest.mark.asyncio
 async def test_parse_new_dispute_event():
     cfg = TelliotConfig()
-    cfg.main.chain_id = 1337
-    ganache_endpoint = RPCEndpoint(1337, url="http://127.0.0.1:8545", explorer='https://scan.v4.testnet.pulsechain.com/')
-    cfg.endpoints.endpoints.append(ganache_endpoint)
+    cfg.main.chain_id = 943
+    endpoint = cfg.endpoints.find(chain_id=943)[0]
+    endpoint.url = "https://rpc.v4.testnet.pulsechain.com"
 
     event = AttributeDict({
         'address': '0x9Bf22Fa8C49ef7F9B9a343A39baE002C2f800802',
