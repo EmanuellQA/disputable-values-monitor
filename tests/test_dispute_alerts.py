@@ -4,6 +4,7 @@ import os
 import pytest
 from hexbytes import HexBytes
 
+from telliot_core.model.endpoints import RPCEndpoint
 from fetch_disputables.alerts import get_twilio_client
 from fetch_disputables.alerts import handle_notification_service
 from fetch_disputables.utils import NewDispute, get_reporters, get_service_notification
@@ -136,9 +137,9 @@ def test_notification_services_new_dispute_against_non_reporter():
 @pytest.mark.asyncio
 async def test_parse_new_dispute_event():
     cfg = TelliotConfig()
-    print('hello test_parse_new_dispute_event')
-    print(cfg.main.chain_id)
-    # cfg.main.chain_id = 1337
+    cfg.main.chain_id = 1337
+    ganache_endpoint = RPCEndpoint(1337, url="http://127.0.0.1:8545", explorer='https://scan.v4.testnet.pulsechain.com/')
+    cfg.endpoints.endpoints.append(ganache_endpoint)
 
     event = AttributeDict({
         'address': '0x9Bf22Fa8C49ef7F9B9a343A39baE002C2f800802',
@@ -158,7 +159,7 @@ async def test_parse_new_dispute_event():
 
     assert isinstance(new_dispute, NewDispute)
     assert new_dispute.chain_id == cfg.main.chain_id
-    # assert new_dispute.link == f"https://scan.v4.testnet.pulsechain.com/tx/{event.transactionHash.hex()}"
+    assert new_dispute.link == f"https://scan.v4.testnet.pulsechain.com/tx/{event.transactionHash.hex()}"
     assert new_dispute.query_id == pls_usd_spot_queryId
 
 
