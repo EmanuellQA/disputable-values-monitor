@@ -216,6 +216,14 @@ async def test_get_dispute_fee():
 
     cfg = TelliotConfig()
     cfg.main.chain_id = 943
+    endpoint = cfg.endpoints.find(chain_id=943)[0]
+    print('hello test_get_dispute_fee')
+    print(cfg.endpoints)
+    print(endpoint)
+    endpoint.url = "https://rpc.v4.testnet.pulsechain.com"
+    print(cfg.endpoints)
+    print(cfg.main.chain_id)
+    print('end hello test_get_dispute_fee')
 
     report = NewReport(
         "0xabc123",
