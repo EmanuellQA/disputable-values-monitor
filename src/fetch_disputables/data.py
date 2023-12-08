@@ -395,12 +395,7 @@ async def parse_new_dispute_event(
     log: LogReceipt
 ) -> Optional[NewDispute]:
     chain_id = cfg.main.chain_id
-    print('HELLO parse_new_dispute_event')
-    print(chain_id)
-    print(cfg.endpoints)
-    print(cfg.endpoints.find(chain_id=chain_id))
     endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
-    print('END HELLO parse_new_dispute_event')
 
     new_dispute = NewDispute()
 
