@@ -182,8 +182,17 @@ def print_title_info() -> None:
     type=float,
     default=0.1,
 )
+@click.option(
+    "--gas-multiplier",
+    "-gm",
+    "gas_multiplier",
+    help="increase gas price by this percentage (default 1%) ie 5 = 5%",
+    nargs=1,
+    type=int,
+    default=1
+)
 @async_run
-async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float) -> None:
+async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
     global ses, slack, team_ses
     team_ses = TeamSes()
@@ -199,11 +208,12 @@ async def main(all_values: bool, wait: int, account_name: str, is_disputing: boo
         account_name=account_name,
         is_disputing=is_disputing,
         confidence_threshold=confidence_threshold,
+        gas_multiplier=gas_multiplier
     )
 
 
 async def start(
-    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float
+    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
@@ -417,7 +427,7 @@ async def start(
                 )
 
                 if is_disputing and new_report.disputable:
-                    success_msg = await dispute(cfg, disp_cfg, account, new_report)
+                    success_msg = await dispute(cfg, disp_cfg, account, new_report, gas_multiplier)
                     if success_msg:
                         new_dispute_notification_task = create_async_task(
                             handle_notification_service,
