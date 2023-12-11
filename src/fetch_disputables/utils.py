@@ -213,3 +213,4 @@ class NotificationSources:
     AUTO_DISPUTER_BEGAN_A_DISPUTE = "Auto-Disputer began a dispute"
     REPORTER_STOP_REPORTING = "Reporter stop reporting"
     REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"
+    DISPUTER_BALANCE_THRESHOLD = "Disputer balance threshold"

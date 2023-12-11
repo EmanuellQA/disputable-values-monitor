@@ -10,6 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import os
 
 import eth_abi
 from chained_accounts import ChainedAccount
@@ -620,13 +621,20 @@ def get_block_number_at_timestamp(cfg: TelliotConfig, timestamp: int) -> Optiona
 
     return int(estimated_block_number)
 
-async def get_reporter_fetch_balance(cfg: TelliotConfig, reporter: str):
+async def get_fetch_balance(cfg: TelliotConfig, address: str) -> Optional[Decimal]:
     fetch_token = get_contract(cfg, name="fetch-token", account=None)
-    reporter_fetch_balance, status = await fetch_token.read("balanceOf", Web3.toChecksumAddress(reporter))
+    fetch_balance, status = await fetch_token.read("balanceOf", Web3.toChecksumAddress(address))
 
     w3 = cfg.get_endpoint().web3
-    reporter_fetch_balance = Decimal(w3.fromWei(reporter_fetch_balance, 'ether'))
+    fetch_balance = Decimal(w3.fromWei(fetch_balance, 'ether'))
     if not status.ok:
-        logger.error(f"Unable to retrieve Reporter {reporter} account balance")
+        logger.error(f"Unable to retrieve {address} account balance")
         return None
-    return reporter_fetch_balance
+    return fetch_balance
+
+async def get_pls_balance(address: str) -> Optional[Decimal]:
+    provider_url = "https://rpc.v4.testnet.pulsechain.com" if os.getenv("NETWORK_ID", "943") == "943" else "https://rpc.pulsechain.com"
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+    balance_wei = w3.eth.getBalance(address)
+    balance = Decimal(w3.fromWei(balance_wei, 'ether'))
+    return balance
