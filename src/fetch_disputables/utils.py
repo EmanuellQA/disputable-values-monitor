@@ -1,5 +1,6 @@
 """Helper functions."""
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 from dataclasses import dataclass
 from decimal import Decimal
@@ -126,7 +127,7 @@ def get_logger(name: str) -> logging.Logger:
     _ = get_logger(name=__name__)
     """
     log_format = "%(levelname)-7s | %(name)s | %(message)s"
-    fh = logging.FileHandler("log.txt")
+    fh = RotatingFileHandler("log.txt", maxBytes=10000000)
     formatter = logging.Formatter(log_format)
     fh.setFormatter(formatter)
     logger = logging.getLogger(name)
@@ -212,3 +213,4 @@ class NotificationSources:
     AUTO_DISPUTER_BEGAN_A_DISPUTE = "Auto-Disputer began a dispute"
     REPORTER_STOP_REPORTING = "Reporter stop reporting"
     REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"
+    DISPUTER_BALANCE_THRESHOLD = "Disputer balance threshold"
