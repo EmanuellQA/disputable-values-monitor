@@ -59,7 +59,7 @@ class Metrics(Enum):
 
 start_block: Dict[int, int] = {}
 disputes_start_block: Dict[int, int] = {}
-inital_block_offset = os.getenv("INITIAL_BLOCK_OFFSET", 0)
+inital_block_offset = int(os.getenv("INITIAL_BLOCK_OFFSET", 0))
 
 
 @dataclass
