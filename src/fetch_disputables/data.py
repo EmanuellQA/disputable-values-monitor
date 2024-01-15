@@ -45,6 +45,9 @@ from fetch_disputables.utils import NewDispute
 
 from fetch_disputables.utils import Topics
 
+from dotenv import load_dotenv
+load_dotenv()
+
 logger = get_logger(__name__)
 
 
@@ -56,7 +59,7 @@ class Metrics(Enum):
 
 start_block: Dict[int, int] = {}
 disputes_start_block: Dict[int, int] = {}
-inital_block_offset = 1000
+inital_block_offset = int(os.getenv("INITIAL_BLOCK_OFFSET", 0))
 
 
 @dataclass
