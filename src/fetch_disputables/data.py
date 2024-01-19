@@ -60,6 +60,7 @@ class Metrics(Enum):
 start_block: Dict[int, int] = {}
 disputes_start_block: Dict[int, int] = {}
 inital_block_offset = int(os.getenv("INITIAL_BLOCK_OFFSET", 0))
+chain_reorg = int(os.getenv("CHAIN_REORG", 0))
 
 
 @dataclass
@@ -277,11 +278,11 @@ async def log_loop(web3: Web3, chain_id: int, addr: str, topics: list[str]) -> l
             logger.warning(f"unable to retrieve latest block number from chain_id {chain_id}: {e}")
         return []
     from_block = start_block.get(chain_id, block_number - inital_block_offset)
-    from_block -= 10  # go back 10 more blocks to account for reorgs
+    from_block -= chain_reorg  # go back CHAIN_REORG more blocks to account for reorgs
 
     if topics[0] == Topics.NEW_DISPUTE:
         from_block = disputes_start_block.get(chain_id, block_number - inital_block_offset)
-        from_block -= 10
+        from_block -= chain_reorg
     from_block = max(from_block, 0)
     event_filter = mk_filter(from_block, block_number, addr, topics)
 

@@ -110,6 +110,7 @@ def select_account(cfg: TelliotConfig, account: Optional[str]) -> Optional[Chain
             new_account = setup_account(cfg.main.chain_id)
             if new_account is not None:
                 click.echo(f"{new_account.name} selected!")
+                new_account.unlock()
                 return new_account
             return None
         else:
