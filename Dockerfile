@@ -1,5 +1,5 @@
 # Use the official Python 3.10 image as the base image
-FROM python:3.10
+FROM python:3.9
 
 RUN apt-get update && \
     apt-get install -y vim
