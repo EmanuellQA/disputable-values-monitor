@@ -1,9 +1,12 @@
 #!/bin/bash
 
-git submodule update --init --recursive
-git submodule update --remote --recursive
+rm -r ./build
+rm -r ./lib
+rm -r ./venv
 
-python -m venv venv
+git submodule foreach git submodule update
+
+python3.9 -m venv venv
 
 source venv/bin/activate
 

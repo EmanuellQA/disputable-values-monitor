@@ -20,6 +20,6 @@ rendered_data = template.render(
 env_name = os.environ["ENV_NAME"]
 
 # Save the modified YAML data back to the file
-with open(f"/usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.{env_name}.json", 'w') as output_file:
+with open(f"/usr/local/lib/python3.9/site-packages/telliot_core/data/contract_directory.{env_name}.json", 'w') as output_file:
     sys.stdout = output_file
     print(rendered_data)
