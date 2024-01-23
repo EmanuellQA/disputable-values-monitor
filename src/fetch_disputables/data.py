@@ -572,7 +572,7 @@ async def parse_new_report_event(
 
             return new_report
         else:
-            logger.info("unable to check disputability")
+            logger.info(f"unable to check disputability, report hash: {new_report.tx_hash}")
             return None
     else:
         new_report.status_str = disputable_str(disputable, new_report.query_id)
