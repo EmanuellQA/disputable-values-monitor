@@ -438,6 +438,7 @@ async def parse_new_report_event(
     log: LogReceipt,
     confidence_threshold: float,
     monitored_feeds: List[MonitoredFeed],
+    managed_feeds,
     see_all_values: bool = False,
 ) -> Optional[NewReport]:
     """Parse a NewReport event."""
@@ -562,6 +563,18 @@ async def parse_new_report_event(
 
         monitored_feed = MonitoredFeed(feed, threshold)
 
+    logger.debug(f"Monitored feed: {managed_feeds.is_managed_feed(new_report.query_id)} - queryId {new_report.query_id} - report_hash={new_report.tx_hash}")
+    if managed_feeds.is_managed_feed(new_report.query_id):
+        logger.info(f"Found a managed feed report - {new_report.query_id}, report_hash={new_report.tx_hash}")
+        new_report.status_str = disputable_str(False, new_report.query_id)
+        new_report.disputable = False
+        removable = await managed_feeds.is_report_removable(
+            monitored_feed, new_report.query_id, cfg, new_report.value
+        )
+        logger.info(f"Removable: {removable}")
+        new_report.removable = removable
+        return new_report
+
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)
     if disputable is None:
 
@@ -577,11 +590,6 @@ async def parse_new_report_event(
     else:
         new_report.status_str = disputable_str(disputable, new_report.query_id)
         new_report.disputable = disputable
-
-        if monitored_feed.feed.query.asset == "managed-feed":
-            new_report.disputable = False
-            new_report.status_str = disputable_str(False, new_report.query_id)
-            new_report.removable = disputable
 
         return new_report
 
