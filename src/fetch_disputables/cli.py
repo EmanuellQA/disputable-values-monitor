@@ -41,6 +41,7 @@ from fetch_disputables.utils import create_async_task
 from fetch_disputables.utils import format_new_report_message
 from fetch_disputables.data import get_fetch_balance, get_pls_balance
 from fetch_disputables.utils import NotificationSources
+from fetch_disputables.remove_report import remove_report
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -108,6 +109,18 @@ notification_service_results: dict = {
         }
     },
     NotificationSources.DISPUTER_BALANCE_THRESHOLD: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.REMOVE_REPORT: {
         "sms": None,
         "email": None,
         "slack": None,
@@ -454,6 +467,32 @@ async def start(
                                 notification_source=NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE
                             )
                         )
+
+                if new_report.removable:
+                    success_msg = await remove_report(cfg, disp_cfg, account, new_report, gas_multiplier)
+                    if success_msg:
+                        removable_notification_task = create_async_task(
+                            handle_notification_service,
+                            subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Report Removed",
+                            msg=(
+                                f"Report Removed:\n"
+                                f"{format_new_report_message(new_report)}"
+                            ),
+                            notification_service=notification_service,
+                            sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
+                            ses=ses,
+                            slack=slack,
+                            notification_service_results=notification_service_results,
+                            notification_source=NotificationSources.REMOVE_REPORT
+                        )
+                        removable_notification_task.add_done_callback(
+                            lambda future_obj: notification_task_callback(
+                                msg=f"Report Removed",
+                                notification_service_results=notification_service_results,
+                                notification_source=NotificationSources.REMOVE_REPORT
+                            )
+                        )
+                    
 
                 display_rows.append(
                     (

@@ -578,6 +578,11 @@ async def parse_new_report_event(
         new_report.status_str = disputable_str(disputable, new_report.query_id)
         new_report.disputable = disputable
 
+        if monitored_feed.feed.query.asset == "managed-feed":
+            new_report.disputable = False
+            new_report.status_str = disputable_str(False, new_report.query_id)
+            new_report.removable = disputable
+
         return new_report
 
 
