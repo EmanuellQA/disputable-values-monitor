@@ -42,6 +42,7 @@ from fetch_disputables.utils import format_new_report_message
 from fetch_disputables.data import get_fetch_balance, get_pls_balance
 from fetch_disputables.utils import NotificationSources
 from fetch_disputables.remove_report import remove_report
+from fetch_disputables.ManagedFeeds import ManagedFeeds
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -232,6 +233,7 @@ async def start(
     cfg = TelliotConfig()
     cfg.main.chain_id = int(os.getenv("NETWORK_ID", "943"))
     disp_cfg = AutoDisputerConfig()
+    managed_feeds = ManagedFeeds()
     print_title_info()
 
     from_number, recipients = get_twilio_info()
@@ -393,6 +395,7 @@ async def start(
                     new_report = await parse_new_report_event(
                         cfg=cfg,
                         monitored_feeds=disp_cfg.monitored_feeds,
+                        managed_feeds=managed_feeds,
                         log=event,
                         confidence_threshold=confidence_threshold,
                     )
@@ -469,7 +472,7 @@ async def start(
                         )
 
                 if new_report.removable:
-                    success_msg = await remove_report(cfg, disp_cfg, account, new_report, gas_multiplier)
+                    success_msg = await remove_report(cfg, managed_feeds, account, new_report, gas_multiplier)
                     if success_msg:
                         removable_notification_task = create_async_task(
                             handle_notification_service,

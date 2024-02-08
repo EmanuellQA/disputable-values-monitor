@@ -438,6 +438,7 @@ async def parse_new_report_event(
     log: LogReceipt,
     confidence_threshold: float,
     monitored_feeds: List[MonitoredFeed],
+    managed_feeds,
     see_all_values: bool = False,
 ) -> Optional[NewReport]:
     """Parse a NewReport event."""
@@ -487,7 +488,6 @@ async def parse_new_report_event(
     # if query of event matches a query type of the monitored feeds, fill the query parameters
 
     monitored_feed = None
-    LLPLS_USD_SPOT_QUERYID = "0x1f984b2c7cbcb7f024e5bdd873d8ca5d64e8696ff219ebede2374bf3217c9b75"
 
     for mf in monitored_feeds:
         try:
@@ -511,8 +511,6 @@ async def parse_new_report_event(
             if new_report.query_type == "SpotPrice":
                 catalog_entry = query_catalog.find(query_id=new_report.query_id)
                 mf.feed = CATALOG_FEEDS.get(catalog_entry[0].tag)
-                if LLPLS_USD_SPOT_QUERYID == new_report.query_id:
-                    mf.feed = CATALOG_FEEDS.get("llpls-usd-spot-api")
 
             else:
 
@@ -543,8 +541,6 @@ async def parse_new_report_event(
         if catalog:
             tag = catalog[0].tag
             feed = CATALOG_FEEDS.get(tag)
-            if LLPLS_USD_SPOT_QUERYID == new_report.query_id:
-                feed = CATALOG_FEEDS.get("llpls-usd-spot-api")
             if feed is None:
                 logger.error(f"Unable to find feed for tag {tag}")
                 return None
@@ -567,6 +563,18 @@ async def parse_new_report_event(
 
         monitored_feed = MonitoredFeed(feed, threshold)
 
+    logger.debug(f"Monitored feed: {managed_feeds.is_managed_feed(new_report.query_id)} - queryId {new_report.query_id} - report_hash={new_report.tx_hash}")
+    if managed_feeds.is_managed_feed(new_report.query_id):
+        logger.info(f"Found a managed feed report - {new_report.query_id}, report_hash={new_report.tx_hash}")
+        new_report.status_str = disputable_str(False, new_report.query_id)
+        new_report.disputable = False
+        removable = await managed_feeds.is_report_removable(
+            monitored_feed, new_report.query_id, cfg, new_report.value
+        )
+        logger.info(f"Removable: {removable}")
+        new_report.removable = removable
+        return new_report
+
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)
     if disputable is None:
 
@@ -582,11 +590,6 @@ async def parse_new_report_event(
     else:
         new_report.status_str = disputable_str(disputable, new_report.query_id)
         new_report.disputable = disputable
-
-        if monitored_feed.feed.query.asset == "llpls":
-            new_report.disputable = False
-            new_report.status_str = disputable_str(False, new_report.query_id)
-            new_report.removable = disputable
 
         return new_report
 
