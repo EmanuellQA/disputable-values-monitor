@@ -205,8 +205,18 @@ def print_title_info() -> None:
     type=int,
     default=1
 )
+@click.option(
+    "--skip-processed-reports",
+    "-spr",
+    "skip_processed_reports",
+    help="Skip reports already processed to avoid repetitive workload",
+    nargs=1,
+    type=bool,
+    default=False,
+    is_flag=True
+)
 @async_run
-async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int) -> None:
+async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int, skip_processed_reports: bool) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
     global ses, slack, team_ses
     team_ses = TeamSes()
@@ -222,12 +232,13 @@ async def main(all_values: bool, wait: int, account_name: str, is_disputing: boo
         account_name=account_name,
         is_disputing=is_disputing,
         confidence_threshold=confidence_threshold,
-        gas_multiplier=gas_multiplier
+        gas_multiplier=gas_multiplier,
+        skip_processed_reports=skip_processed_reports
     )
 
 
 async def start(
-    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int
+    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int, skip_processed_reports: bool
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
@@ -398,6 +409,8 @@ async def start(
                         managed_feeds=managed_feeds,
                         log=event,
                         confidence_threshold=confidence_threshold,
+                        displayed_events=displayed_events,
+                        skip_processed_reports=skip_processed_reports
                     )
                 except Exception as e:
                     logger.error(f"unable to parse new report event on chain_id {chain_id}: {e}")
@@ -600,11 +613,12 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
         reporters_last_timestamp[reporter] = (last_timestamp, True)
 
 async def update_reporters_pls_balance(
+    telliot_config: TelliotConfig,
     reporters: list[str],
     reporters_pls_balance: dict[str, tuple[Decimal, bool]],
 ):
     for reporter in reporters:
-        balance = await get_pls_balance(reporter)
+        balance = await get_pls_balance(telliot_config, reporter)
         old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
         reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
@@ -665,7 +679,7 @@ async def update_disputer_balances(
     try:
         disputer_address = Web3.toChecksumAddress(disputer_account.address)
         old_balance_pls, alert_sent_pls = disputer_balances.get('PLS', (0, False))
-        disputer_pls_balance = await get_pls_balance(disputer_address)
+        disputer_pls_balance = await get_pls_balance(telliot_config, disputer_address)
         disputer_balances['PLS'] = (disputer_pls_balance, disputer_pls_balance == old_balance_pls and alert_sent_pls)
 
         old_balance_fetch, alert_sent_fetch = disputer_balances.get('FETCH', (0, False))
