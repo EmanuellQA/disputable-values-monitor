@@ -10,6 +10,7 @@ from fetch_disputables.config import AutoDisputerConfig
 from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import NewReport
+from fetch_disputables.data import get_endpoint
 
 logger = get_logger(__name__)
 
@@ -44,10 +45,9 @@ async def dispute(
         logger.info(f"No account provided, skipping eligible dispute on chain_id {new_report.chain_id}")
         return ""
     
-    cfg.main.chain_id = new_report.chain_id
-
     try:
-        endpoint = cfg.get_endpoint()
+        endpoint = get_endpoint(cfg, new_report.chain_id)
+        if not endpoint: raise ValueError
     except ValueError:
         logger.error(f"Unable to dispute: can't find an endpoint on chain id {new_report.chain_id}")
         return ""
