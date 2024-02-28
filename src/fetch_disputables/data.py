@@ -340,6 +340,26 @@ async def chain_events(
 
 connected_endpoints: dict[int, RPCEndpoint] = dict()
 
+def handle_connect_endpoint(endpoint: RPCEndpoint, chain_id: int) -> None:
+    if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
+        connected_endpoint = connected_endpoints[chain_id]
+        is_connected = connected_endpoint._web3.isConnected()
+
+        if is_connected: return
+
+        if not is_connected:
+            logger.info(f"endpoint {connected_endpoint.url} lost connection")
+            connected_endpoints[chain_id] = None
+
+    try:
+        is_connected = endpoint.connect()
+        if not is_connected: return
+        logger.info(f"Chain id {chain_id} connected to: {endpoint.url}")
+        connected_endpoints[chain_id] = endpoint
+    except ValueError as e:
+        logger.warning(f"unable to connect to endpoint for chain_id {chain_id}: {e}")
+        return
+
 async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) -> List[List[tuple[int, Any]]]:
     """Get all events from all live Fetch networks"""
 
@@ -349,26 +369,10 @@ async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) 
 
         chain_id = endpoint.chain_id
 
-        if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
-            connected_endpoint = connected_endpoints[chain_id]
-            is_connected = connected_endpoint._web3.isConnected()
+        handle_connect_endpoint(endpoint, chain_id)
 
-            if is_connected:
-                endpoints.append(connected_endpoint)
-                continue
-
-            if not is_connected:
-                logger.info(f"endpoint {connected_endpoint.url} lost connection")
-                connected_endpoints[chain_id] = None
-
-        try:
-            is_connected = endpoint.connect()
-            if not is_connected: continue
-            logger.info(f"Chain id {chain_id} connected to: {endpoint.url}")
-            connected_endpoints[chain_id] = endpoint
-        except Exception as e:
-            logger.warning(f"unable to connect to endpoint for chain_id {chain_id}: {e}")
-            continue
+        connected_endpoint = connected_endpoints[chain_id]
+        if connected_endpoint is None: continue
 
         endpoints.append(endpoint)
 
@@ -425,23 +429,13 @@ def get_endpoint(cfg: TelliotConfig, chain_id: int) -> Optional[RPCEndpoint]:
     for endpoint in endpoints:
         chain_id = endpoint.chain_id
 
-        if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
-            connected_endpoint = connected_endpoints[chain_id]
-            is_connected = connected_endpoint._web3.isConnected()
+        handle_connect_endpoint(endpoint, chain_id)
 
-            if is_connected: return connected_endpoint
+        connected_endpoint = connected_endpoints[chain_id]
 
-            if not is_connected:
-                logger.info(f"endpoint {connected_endpoint.url} lost connection")
-                connected_endpoints[chain_id] = None
+        if connected_endpoint is None: continue
 
-        try:
-            is_connected = endpoint.connect()
-            if not is_connected: continue
-            return endpoint
-        except ValueError as e:
-            logger.error(f"Unable to connect to endpoint on chain_id {chain_id}: {e}")
-            continue
+        return connected_endpoint
     return None
 
 async def parse_new_dispute_event(
