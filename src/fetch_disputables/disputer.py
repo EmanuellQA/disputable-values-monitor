@@ -11,6 +11,7 @@ from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import NewReport
 from fetch_disputables.data import get_endpoint
+from fetch_disputables.utils import get_tx_explorer_url
 
 logger = get_logger(__name__)
 
@@ -153,7 +154,7 @@ async def dispute(
     if not explorer:
         dispute_tx_link = str(tx_receipt.transactionHash.hex())
     else:
-        dispute_tx_link = explorer + "tx/" + str(tx_receipt.transactionHash.hex())
+        dispute_tx_link = get_tx_explorer_url(str(tx_receipt.transactionHash.hex()), cfg)
 
     logger.info("Dispute Tx Link: " + dispute_tx_link)
     return "Dispute Tx Link: " + dispute_tx_link

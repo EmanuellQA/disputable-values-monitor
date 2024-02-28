@@ -8,6 +8,7 @@ from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import NewReport
 from fetch_disputables.data import get_endpoint
+from fetch_disputables.utils import get_tx_explorer_url
 
 from fetch_disputables.disputer import get_gas_price
 
@@ -85,9 +86,9 @@ async def remove_report(
     new_report.status_str += ": removed!"
     explorer = endpoint.explorer
     if not explorer:
-        dispute_tx_link = str(tx_receipt.transactionHash.hex())
+        remove_tx_link = str(tx_receipt.transactionHash.hex())
     else:
-        dispute_tx_link = explorer + "tx/" + str(tx_receipt.transactionHash.hex())
+        remove_tx_link = get_tx_explorer_url(str(tx_receipt.transactionHash.hex()), cfg)
 
-    logger.info("Remove value Tx Link: " + dispute_tx_link)
-    return "Remove value Tx Link: " + dispute_tx_link
+    logger.info("Remove value Tx Link: " + remove_tx_link)
+    return "Remove value Tx Link: " + remove_tx_link
