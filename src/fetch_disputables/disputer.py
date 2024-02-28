@@ -10,7 +10,7 @@ from fetch_disputables.config import AutoDisputerConfig
 from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import NewReport
-from fetch_disputables.data import get_endpoint
+from fetch_disputables.handle_connect_endpoint import get_endpoint
 from fetch_disputables.utils import get_tx_explorer_url
 
 logger = get_logger(__name__)

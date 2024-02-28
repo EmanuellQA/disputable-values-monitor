@@ -303,6 +303,7 @@ async def start(
 
         reporters_pls_balance_task = create_async_task(
             update_reporters_pls_balance,
+            cfg,
             reporters,
             reporters_pls_balance
         )
