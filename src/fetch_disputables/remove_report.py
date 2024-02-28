@@ -7,7 +7,7 @@ from fetch_disputables.ManagedFeeds import ManagedFeeds
 from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import NewReport
-from fetch_disputables.data import get_endpoint
+from fetch_disputables.handle_connect_endpoint import get_endpoint
 from fetch_disputables.utils import get_tx_explorer_url
 
 from fetch_disputables.disputer import get_gas_price

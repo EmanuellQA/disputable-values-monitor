@@ -17,21 +17,10 @@ from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_core.model.endpoints import RPCEndpoint
 from telliot_feeds.utils.cfg import setup_account
+from fetch_disputables.handle_connect_endpoint import get_endpoint
 
 from dotenv import load_dotenv
 load_dotenv()
-
-def get_endpoint(cfg: TelliotConfig, chain_id: int) -> Optional[RPCEndpoint]:
-    endpoints = cfg.endpoints.find(chain_id=chain_id)
-    for endpoint in endpoints:
-        try:
-            is_connected = endpoint.connect()
-            if not is_connected: continue
-            return endpoint
-        except ValueError as e:
-            get_logger(__name__).error(f"Unable to connect to endpoint on chain_id {chain_id}: {e}")
-            continue
-    return None
 
 def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
