@@ -1,8 +1,19 @@
+import logging
+from logging.handlers import RotatingFileHandler
 from typing import Optional
 
 from telliot_core.apps.telliot_config import TelliotConfig
 from telliot_core.model.endpoints import RPCEndpoint
-from fetch_disputables.utils import get_logger
+
+def get_logger(name: str) -> logging.Logger:
+    log_format = "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
+    fh = RotatingFileHandler("log.txt", maxBytes=10000000)
+    formatter = logging.Formatter(log_format, datefmt="%Y-%m-%d %H:%M:%S")
+    fh.setFormatter(formatter)
+    logger = logging.getLogger(name)
+    logger.addHandler(fh)
+    logger.setLevel(logging.DEBUG)
+    return logger
 
 logger = get_logger(__name__)
 
@@ -40,4 +51,5 @@ def get_endpoint(cfg: TelliotConfig, chain_id: int) -> Optional[RPCEndpoint]:
         if connected_endpoint is None: continue
 
         return connected_endpoint
+    logger.warning(f"unable to connect to endpoint for chain_id {chain_id}")
     return None

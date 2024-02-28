@@ -329,6 +329,7 @@ async def chain_events(
         for chain_id, address in chain_addy.items():
             try:
                 endpoint = get_endpoint(cfg, chain_id)
+                if not endpoint: continue
                 if endpoint.url.endswith("{INFURA_API_KEY}"):
                     continue
                 endpoint.connect()
