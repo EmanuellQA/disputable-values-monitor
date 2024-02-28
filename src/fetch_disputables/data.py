@@ -338,37 +338,49 @@ async def chain_events(
     return events
 
 
+connected_endpoints: dict[int, RPCEndpoint] = dict()
+
 async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) -> List[List[tuple[int, Any]]]:
     """Get all events from all live Fetch networks"""
 
-    log_loops = []
-
-    connected_endpoints = dict()
-
+    endpoints = []
     for endpoint in cfg.endpoints.endpoints:
-        if endpoint.url.endswith("{INFURA_API_KEY}"):
-            continue
+        if endpoint.url.endswith("{INFURA_API_KEY}"): continue
+
         chain_id = endpoint.chain_id
-        if chain_id in connected_endpoints:
-            logger.info(f"Chain id {chain_id} connected (url: {connected_endpoints[chain_id]}), skipping {endpoint.url}")
-            continue
+
+        if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
+            connected_endpoint = connected_endpoints[chain_id]
+            is_connected = connected_endpoint._web3.isConnected()
+
+            if is_connected:
+                endpoints.append(connected_endpoint)
+                continue
+
+            if not is_connected:
+                logger.info(f"endpoint {connected_endpoint.url} lost connection")
+                connected_endpoints[chain_id] = None
+
         try:
             is_connected = endpoint.connect()
             if not is_connected: continue
-            connected_endpoints[chain_id] = endpoint.url
+            logger.info(f"Chain id {chain_id} connected to: {endpoint.url}")
+            connected_endpoints[chain_id] = endpoint
         except Exception as e:
             logger.warning(f"unable to connect to endpoint for chain_id {chain_id}: {e}")
             continue
 
+        endpoints.append(endpoint)
+
+    log_loops = []
+    for endpoint in endpoints:
         w3 = endpoint.web3
 
-        if not w3:
-            continue
+        if not w3: continue
 
         addr, _ = get_contract_info(chain_id, contract_name)
 
-        if not addr:
-            continue
+        if not addr: continue
 
         log_loops.append(log_loop(w3, chain_id, addr, topics))
 
@@ -411,6 +423,18 @@ def get_source_from_data(query_data: bytes) -> Optional[DataSource]:
 def get_endpoint(cfg: TelliotConfig, chain_id: int) -> Optional[RPCEndpoint]:
     endpoints = cfg.endpoints.find(chain_id=chain_id)
     for endpoint in endpoints:
+        chain_id = endpoint.chain_id
+
+        if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
+            connected_endpoint = connected_endpoints[chain_id]
+            is_connected = connected_endpoint._web3.isConnected()
+
+            if is_connected: return connected_endpoint
+
+            if not is_connected:
+                logger.info(f"endpoint {connected_endpoint.url} lost connection")
+                connected_endpoints[chain_id] = None
+
         try:
             is_connected = endpoint.connect()
             if not is_connected: continue
@@ -425,7 +449,7 @@ async def parse_new_dispute_event(
     log: LogReceipt
 ) -> Optional[NewDispute]:
     chain_id = cfg.main.chain_id
-    endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
+    endpoint = get_endpoint(cfg, chain_id)
 
     new_dispute = NewDispute()
 
