@@ -33,7 +33,9 @@ def handle_connect_endpoint(endpoint: RPCEndpoint, chain_id: int) -> None:
 
     try:
         is_connected = endpoint.connect()
-        if not is_connected: return
+        if not is_connected:
+            logger.warning(f"could not connect to {endpoint.url} for chain_id {chain_id}")
+            return
         logger.info(f"Chain id {chain_id} connected to: {endpoint.url}")
         connected_endpoints[chain_id] = endpoint
     except ValueError as e:
