@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from logging.handlers import RotatingFileHandler
 from typing import Optional
 
@@ -17,7 +18,7 @@ def get_logger(name: str) -> logging.Logger:
 
 logger = get_logger(__name__)
 
-connected_endpoints: dict[int, RPCEndpoint] = dict()
+connected_endpoints: dict[int, RPCEndpoint] = defaultdict(lambda: None)
 
 def handle_connect_endpoint(endpoint: RPCEndpoint, chain_id: int) -> None:
     if chain_id in connected_endpoints and connected_endpoints[chain_id] is not None:
