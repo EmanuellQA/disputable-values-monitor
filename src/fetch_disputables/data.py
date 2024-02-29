@@ -42,6 +42,11 @@ from fetch_disputables.utils import get_logger
 from fetch_disputables.utils import get_tx_explorer_url
 from fetch_disputables.utils import NewReport
 from fetch_disputables.utils import NewDispute
+from fetch_disputables.handle_connect_endpoint import (
+    connected_endpoints,
+    handle_connect_endpoint,
+    get_endpoint
+)
 
 from fetch_disputables.utils import Topics
 
@@ -228,17 +233,22 @@ def get_contract(cfg: TelliotConfig, account: ChainedAccount, name: str) -> Opti
     if (addr is None) or (abi is None):
         logger.error(f"Could not find contract {name} on chain_id {chain_id}")
         return None
+    
+    endpoint = get_endpoint(cfg, chain_id)
+    if not endpoint:
+        logger.error(f"Unable to find a suitable endpoint for chain_id {chain_id}")
+        return None
 
-    c = Contract(addr, abi, cfg.get_endpoint(), account)
+    c = Contract(addr, abi, endpoint, account)
 
     try:
-        connected_to_node = cfg.get_endpoint().connect()
+        connected_to_node = endpoint.connect()
     except (ValueError, ConnectionError) as e:
-        logger.error(f"Could not connect to endpoint {cfg.get_endpoint()} for chain_id {chain_id}: " + str(e))
+        logger.error(f"Could not connect to endpoint {endpoint} for chain_id {chain_id}: " + str(e))
         return None
 
     if not connected_to_node:
-        logger.error(f"Could not connect to endpoint {cfg.get_endpoint()} for chain_id {chain_id}")
+        logger.error(f"Could not connect to endpoint {endpoint} for chain_id {chain_id}")
         return None
 
     status = c.connect()
@@ -318,7 +328,8 @@ async def chain_events(
     for topic in topics:
         for chain_id, address in chain_addy.items():
             try:
-                endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
+                endpoint = get_endpoint(cfg, chain_id)
+                if not endpoint: continue
                 if endpoint.url.endswith("{INFURA_API_KEY}"):
                     continue
                 endpoint.connect()
@@ -331,31 +342,31 @@ async def chain_events(
 
     return events
 
-
 async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) -> List[List[tuple[int, Any]]]:
     """Get all events from all live Fetch networks"""
 
-    log_loops = []
-
+    endpoints = []
     for endpoint in cfg.endpoints.endpoints:
-        if endpoint.url.endswith("{INFURA_API_KEY}"):
-            continue
-        chain_id = endpoint.chain_id
-        try:
-            endpoint.connect()
-        except Exception as e:
-            logger.warning(f"unable to connect to endpoint for chain_id {chain_id}: {e}")
-            continue
+        if endpoint.url.endswith("{INFURA_API_KEY}"): continue
 
+        chain_id = endpoint.chain_id
+
+        handle_connect_endpoint(endpoint, chain_id)
+
+        connected_endpoint = connected_endpoints[chain_id]
+        if connected_endpoint is None: continue
+
+        endpoints.append(endpoint)
+
+    log_loops = []
+    for endpoint in endpoints:
         w3 = endpoint.web3
 
-        if not w3:
-            continue
+        if not w3: continue
 
         addr, _ = get_contract_info(chain_id, contract_name)
 
-        if not addr:
-            continue
+        if not addr: continue
 
         log_loops.append(log_loop(w3, chain_id, addr, topics))
 
@@ -400,7 +411,7 @@ async def parse_new_dispute_event(
     log: LogReceipt
 ) -> Optional[NewDispute]:
     chain_id = cfg.main.chain_id
-    endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
+    endpoint = get_endpoint(cfg, chain_id)
 
     new_dispute = NewDispute()
 
@@ -439,14 +450,17 @@ async def parse_new_report_event(
     confidence_threshold: float,
     monitored_feeds: List[MonitoredFeed],
     managed_feeds,
+    displayed_events: set[str],
     see_all_values: bool = False,
+    skip_processed_reports: bool = False
 ) -> Optional[NewReport]:
     """Parse a NewReport event."""
 
     chain_id = cfg.main.chain_id
-    endpoint = cfg.endpoints.find(chain_id=chain_id)[0]
 
     new_report = NewReport()
+
+    endpoint = get_endpoint(cfg, chain_id)
 
     if not endpoint:
         logger.error(f"Unable to find a suitable endpoint for chain_id {chain_id}")
@@ -470,6 +484,7 @@ async def parse_new_report_event(
         return None
 
     new_report.tx_hash = event_data.transactionHash.hex()
+    if skip_processed_reports and new_report.tx_hash in displayed_events: return None
     new_report.chain_id = chain_id
     new_report.query_id = "0x" + event_data.args._queryId.hex()
     new_report.query_type = get_query_type(q)
@@ -638,20 +653,29 @@ def get_block_number_at_timestamp(cfg: TelliotConfig, timestamp: int) -> Optiona
 
     return int(estimated_block_number)
 
+def get_w3(cfg: TelliotConfig, chain_id: int) -> Optional[Web3]:
+    endpoint = get_endpoint(cfg, chain_id)
+    if not endpoint:
+        logger.error(f"Unable to find a suitable endpoint for chain_id {chain_id}")
+        return None
+    return endpoint.web3
+
 async def get_fetch_balance(cfg: TelliotConfig, address: str) -> Optional[Decimal]:
+    w3 = get_w3(cfg, int(os.getenv("NETWORK_ID", "943")))
+
     fetch_token = get_contract(cfg, name="fetch-token", account=None)
     fetch_balance, status = await fetch_token.read("balanceOf", Web3.toChecksumAddress(address))
 
-    w3 = cfg.get_endpoint().web3
-    fetch_balance = Decimal(w3.fromWei(fetch_balance, 'ether'))
     if not status.ok:
         logger.error(f"Unable to retrieve {address} account balance")
         return None
+
+    fetch_balance = Decimal(w3.fromWei(fetch_balance, 'ether'))
+    
     return fetch_balance
 
-async def get_pls_balance(address: str) -> Optional[Decimal]:
-    provider_url = "https://rpc.v4.testnet.pulsechain.com" if os.getenv("NETWORK_ID", "943") == "943" else "https://rpc.pulsechain.com"
-    w3 = Web3(Web3.HTTPProvider(provider_url))
+async def get_pls_balance(cfg: TelliotConfig, address: str) -> Optional[Decimal]:
+    w3 = get_w3(cfg, int(os.getenv("NETWORK_ID", "943")))
     balance_wei = w3.eth.getBalance(address)
     balance = Decimal(w3.fromWei(balance_wei, 'ether'))
     return balance
