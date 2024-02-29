@@ -15,14 +15,16 @@ import click
 from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
+from telliot_core.model.endpoints import RPCEndpoint
 from telliot_feeds.utils.cfg import setup_account
+from fetch_disputables.handle_connect_endpoint import get_endpoint
 
 from dotenv import load_dotenv
 load_dotenv()
 
 def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
-    explorer: str = cfg.get_endpoint().explorer
+    explorer: str = get_endpoint(cfg, cfg.main.chain_id).explorer
     if explorer is not None and explorer[-1] != "/": explorer += "/"
     if explorer is not None:
         return explorer + "tx/" + tx_hash
