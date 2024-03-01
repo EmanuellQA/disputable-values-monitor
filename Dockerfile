@@ -11,8 +11,12 @@ COPY . .
 # Set the environment variable within the Dockerfile
 
 # Run the install.sh script inside the container
+
+RUN git submodule update --init --recursive
+
 RUN pip install .
 RUN pip install -r requirements.txt
+CMD ["/bin/bash"]
 #RUN python -c "import telliot_core; print(f'telliot-core version installed - {telliot_core.__version__}')"
 #RUN python -c "import telliot_feeds; print(f'telliot-feeds version installed - {telliot_feeds.__version__}')"
 #RUN /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.dev.json /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.json
