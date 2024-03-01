@@ -362,6 +362,8 @@ async def get_events(cfg: TelliotConfig, contract_name: str, topics: list[str]) 
     for endpoint in endpoints:
         w3 = endpoint.web3
 
+        chain_id = endpoint.chain_id
+
         if not w3: continue
 
         addr, _ = get_contract_info(chain_id, contract_name)
