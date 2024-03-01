@@ -13,15 +13,14 @@ COPY . .
 # Run the install.sh script inside the container
 
 ARG TELLIOT_BRANCH
-ENV TELLIOT_BRANCH=$TELLIOT_BRANCH
+ENV telliot_branch=$TELLIOT_BRANCH
 RUN git submodule update --init --recursive
-RUN echo $TELLIOT_BRANCH > my_branch.txt
-RUN cd telliot-feeds && git checkout $TELLIOT_BRANCH
-RUN cd telliot-feeds/telliot-core && git checkout $TELLIOT_BRANCH
+RUN cd telliot-feeds && git checkout $telliot_branch
+RUN cd telliot-feeds/telliot-core && git checkout $telliot_branch
 
 RUN pip install .
 RUN pip install -r requirements.txt
-CMD ["python", "initialize_dvm_docker.py"]
+CMD ["python", "initialize_docker.py", "--mode", "initialize"]
 #RUN python -c "import telliot_core; print(f'telliot-core version installed - {telliot_core.__version__}')"
 #RUN python -c "import telliot_feeds; print(f'telliot-feeds version installed - {telliot_feeds.__version__}')"
 #RUN /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.dev.json /usr/local/lib/python3.10/site-packages/telliot_core/data/contract_directory.json
