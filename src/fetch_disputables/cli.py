@@ -45,7 +45,7 @@ from fetch_disputables.remove_report import remove_report
 from fetch_disputables.ManagedFeeds import ManagedFeeds
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv('.env')
 
 notification_service: list[str] = get_service_notification()
 notification_service_results: dict = {
