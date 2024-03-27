@@ -300,6 +300,7 @@ async def start(
         event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
 
         send_alerts_when_reporters_stops_reporting(reporters_last_timestamp)
+        send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp)
 
         reporters_pls_balance_task = create_async_task(
             update_reporters_pls_balance,
@@ -568,6 +569,53 @@ def update_reporter_last_timestamp(
         new_report_timestamp
     )
     reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
+
+is_all_reporters_alert_sent = False
+def send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
+    global is_all_reporters_alert_sent
+    try:
+        ALL_REPORTERS_INTERVAL = int(os.getenv("ALL_REPORTERS_INTERVAL", None))
+        if ALL_REPORTERS_INTERVAL is None: return
+
+        from_number, recipients = get_twilio_info()
+
+        current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+
+        greater_than_all_reporters_interval = []
+        for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
+            if current_timestamp - last_timestamp > ALL_REPORTERS_INTERVAL:
+                greater_than_all_reporters_interval.append(True)
+            else:
+                is_all_reporters_alert_sent = False
+                greater_than_all_reporters_interval.append(False)
+
+        if is_all_reporters_alert_sent:
+            return
+
+        if len(greater_than_all_reporters_interval) and all(greater_than_all_reporters_interval):
+            subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - All Reporters stop reporting"
+            msg = f"All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes"
+            all_reporters_stop_reporting_notification_task = create_async_task(
+                handle_notification_service,
+                subject=subject,
+                msg=msg,
+                notification_service=notification_service,
+                sms_message_function=lambda : generic_alert(from_number=from_number, recipients=recipients, msg=f"{subject}\n{msg}"),
+                ses=ses,
+                slack=slack,
+                notification_service_results=notification_service_results,
+                notification_source=NotificationSources.REPORTER_STOP_REPORTING
+            )
+            all_reporters_stop_reporting_notification_task.add_done_callback(
+                lambda future_obj: notification_task_callback(
+                    msg=f"All Reporters stop reporting",
+                    notification_service_results=notification_service_results,
+                    notification_source=NotificationSources.REPORTER_STOP_REPORTING
+                )
+            )
+            is_all_reporters_alert_sent = True
+    except Exception as e:
+        logger.error(f"Error in send_alerts_when_all_reporters_stops_reporting: {e}")
 
 def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
     from_number, recipients = get_twilio_info()
