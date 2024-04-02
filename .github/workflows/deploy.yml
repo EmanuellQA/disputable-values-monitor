@@ -32,6 +32,8 @@ jobs:
        with:
          ref: ${{ github.ref_name }}
          submodules: recursive
+         token: ${{ secrets.TOKEN_GITHUB }}
+
 
      - name: Setup Python
        uses: actions/setup-python@v4
