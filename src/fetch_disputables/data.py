@@ -167,6 +167,15 @@ class MonitoredFeed(Base):
                     logger.error("Please set a threshold amount to measure percent difference")
                     return None
                 percent_diff: float = (reported_val - trusted_val) / trusted_val
+                query_id = self.feed.query.query_id.hex()
+                logger.info(f"""
+                    Query ID: {query_id}
+                    Trusted Value: {trusted_val}
+                    Reported Value: {reported_val}
+                    Percentage change: {float(abs(percent_diff)) * 100}%
+                    Threshold: {self.threshold.amount * 100}%
+                    Is percentage change greater than threshold: {float(abs(percent_diff)) >= self.threshold.amount}
+                """)
                 return float(abs(percent_diff)) >= self.threshold.amount
 
             elif self.threshold.metric == Metrics.Range:

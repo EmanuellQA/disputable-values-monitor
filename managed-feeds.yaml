@@ -4,5 +4,5 @@ managed_feeds:
     datafeed_query_tag: "managed-feed-querytag"
     threshold:
       type: Percentage
-      amount: 5
+      amount: 0.05
   
