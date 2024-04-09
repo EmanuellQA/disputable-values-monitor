@@ -54,12 +54,12 @@ class Ses:
             send_args['Destination']['ToAddresses'] = [recipient]
             try:
                 response = self.ses.send_email(**send_args)
-                logger.info(f"Email sent! Message ID: {response['MessageId']}")
+                logger.info(f"Email sent! Message ID: {response['MessageId']} - {recipient}")
                 responses.append(response)
             except ClientError as e:
                 self._handle_exception(e, recipient)
         if len(responses) == 0:
-            logger.error(f"Failed to send email from {self.source} to {self.destination}")
+            logger.error(f"Failed to send email from {self.source} to destinations: {self.destination}")
             return None
         return responses
 
