@@ -44,9 +44,9 @@ class Slack:
         logger.error(f"""
             Invalid environment alerts configuration:
             Defaults:
-            - HIGH_ALERTS: {EnvironmentAlerts.HIGH_ALERTS}
-            - MID_ALERTS: {EnvironmentAlerts.MID_ALERTS}
-            - LOW_ALERTS: {EnvironmentAlerts.LOW_ALERTS}
+            - HIGH_ALERTS: {EnvironmentAlerts.HIGH_DEFAULT}
+            - MID_ALERTS: {EnvironmentAlerts.MID_DEFAULT}
+            - LOW_ALERTS: {EnvironmentAlerts.LOW_DEFAULT}
             Configured:
             - HIGH_ALERTS: {high_alerts}
             - MID_ALERTS: {mid_alerts}
