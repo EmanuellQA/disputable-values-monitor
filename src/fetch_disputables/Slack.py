@@ -42,7 +42,7 @@ class Slack:
         if alert in low_alerts: return self.low_webhook
 
         logger.error(f"""
-            Invalid alert configuration:
+            Invalid environment alerts configuration:
             Defaults:
             - HIGH_ALERTS: {EnvironmentAlerts.HIGH_ALERTS}
             - MID_ALERTS: {EnvironmentAlerts.MID_ALERTS}
@@ -55,7 +55,7 @@ class Slack:
             Notification source mapped to environment alert: {alert}
             Error: '{alert}' is not in '{EnvironmentAlerts.get_all_alerts()}'
         """)
-        raise Exception(f"Invalid alert: {alert}")
+        raise Exception(f"Invalid environment alerts: {alert} not in {EnvironmentAlerts.get_all_alerts()}")
 
     def send_message(
         self, subject: str, msg: str, new_report: NewReport = None, notification_source: NotificationSources = None
