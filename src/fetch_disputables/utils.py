@@ -233,7 +233,7 @@ class EnvironmentAlerts:
         high = EnvironmentAlerts.get_high_alerts()
         mid = EnvironmentAlerts.get_mid_alerts()
         low = EnvironmentAlerts.get_low_alerts()
-        return json.loads(high) + json.loads(mid) + json.loads(low)
+        return high + mid + low
     
     @staticmethod
     def get_high_alerts() -> list[str]:
