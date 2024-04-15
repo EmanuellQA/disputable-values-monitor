@@ -1,4 +1,5 @@
 """Helper functions."""
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -217,6 +218,32 @@ class NotificationSources:
     NEW_REPORT = "New Report"
     AUTO_DISPUTER_BEGAN_A_DISPUTE = "Auto-Disputer began a dispute"
     REPORTER_STOP_REPORTING = "Reporter stop reporting"
+    ALL_REPORTERS_STOP_REPORTING = "All Reporters stop reporting"
     REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"
     DISPUTER_BALANCE_THRESHOLD = "Disputer balance threshold"
     REMOVE_REPORT = "Remove Report"
+
+class EnvironmentAlerts:
+    HIGH_DEFAULT = '["DISPUTE_AGAINST_REPORTER", "BEGAN_DISPUTE", "REMOVE_REPORT", "ALL_REPORTERS_STOP"]'
+    MID_DEFAULT = '["DISPUTABLE_REPORT", "REPORTER_STOP"]'
+    LOW_DEFAULT = '["REPORTER_BALANCE", "DISPUTER_BALANCE"]'
+
+    @staticmethod
+    def get_all_alerts() -> list[str]:
+        high = EnvironmentAlerts.get_high_alerts()
+        mid = EnvironmentAlerts.get_mid_alerts()
+        low = EnvironmentAlerts.get_low_alerts()
+        return json.loads(high) + json.loads(mid) + json.loads(low)
+    
+    @staticmethod
+    def get_high_alerts() -> list[str]:
+        return json.loads(os.getenv('SLACK_WEBHOOK_HIGH', EnvironmentAlerts.HIGH_DEFAULT))
+    
+    @staticmethod
+    def get_mid_alerts() -> list[str]:
+        return json.loads(os.getenv('SLACK_WEBHOOK_MID', EnvironmentAlerts.MID_DEFAULT))
+    
+    @staticmethod
+    def get_low_alerts() -> list[str]:
+        return json.loads(os.getenv('SLACK_WEBHOOK_LOW', EnvironmentAlerts.LOW_DEFAULT))
+    
