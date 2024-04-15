@@ -56,7 +56,12 @@ PULSEX_SUBGRAPH_URL=https://graph.v4.testnet.pulsechain.com
 FETCH_ADDRESS=0xb0f674d98ef8534b27a142ea2993c7b03bc7d649
 
 # Slack
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+SLACK_WEBHOOK_HIGH="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+SLACK_WEBHOOK_MID="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+SLACK_WEBHOOK_LOW="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+HIGH_ALERTS='["DISPUTE_AGAINST_REPORTER", "BEGAN_DISPUTE", "REMOVE_REPORT", "ALL_REPORTERS_STOP"]'
+MID_ALERTS='["DISPUTABLE_REPORT", "REPORTER_STOP"]'
+LOW_ALERTS='["REPORTER_BALANCE", "DISPUTER_BALANCE"]'
 
 # list of services to send alerts
 NOTIFICATION_SERVICE="sms,email,slack"
@@ -67,8 +72,7 @@ REPORTERS="0x0000000000000000000000000000000000000000,0x000000000000000000000000
 
 Note that to use the "sms" service in the `NOTIFICATION_SERVICE` service list requires a Twilio `.env` configuration, likewise, the "slack" service requires a SLACK_WEBHOOK_URL, and AWS SES environment config for the "email" service.
 
-
-
+For the **Slack** notification service it's possible to configure different channels based on the urgency of the alert. For example, in the configuration above DVM will send "DISPUTE_AGAINST_REPORTER", "BEGAN_DISPUTE", "REMOVE_REPORT" and "ALL_REPORTERS_STOP" alerts to the slack webhook URL at `SLACK_WEBHOOK_HIGH`. If you want to make "BEGAN_DISPUTE" alert a mid alert for example, just move the "BEGAN_DISPUTE" item from `HIGH_ALERTS` to the `MID_ALERTS` list, in that way when DVM begins a dispute it will send this alert to `SLACK_WEBHOOK_MID` channel instead of `SLACK_WEBHOOK_HIGH`.
 
 ## Setup
 
