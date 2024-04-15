@@ -237,13 +237,13 @@ class EnvironmentAlerts:
     
     @staticmethod
     def get_high_alerts() -> list[str]:
-        return json.loads(os.getenv('SLACK_WEBHOOK_HIGH', EnvironmentAlerts.HIGH_DEFAULT))
+        return json.loads(os.getenv('HIGH_ALERTS', EnvironmentAlerts.HIGH_DEFAULT))
     
     @staticmethod
     def get_mid_alerts() -> list[str]:
-        return json.loads(os.getenv('SLACK_WEBHOOK_MID', EnvironmentAlerts.MID_DEFAULT))
+        return json.loads(os.getenv('MID_ALERTS', EnvironmentAlerts.MID_DEFAULT))
     
     @staticmethod
     def get_low_alerts() -> list[str]:
-        return json.loads(os.getenv('SLACK_WEBHOOK_LOW', EnvironmentAlerts.LOW_DEFAULT))
+        return json.loads(os.getenv('LOW_ALERTS', EnvironmentAlerts.LOW_DEFAULT))
     
