@@ -224,7 +224,7 @@ def format_new_dispute_message(new_dispute: NewDispute):
         f"- Vote round: {new_dispute.voteRound}\n"
         f"- Fee: {new_dispute.fee}\n"
         f"- Vote round length: {new_dispute.voteRoundLength}\n"
-        f"- Chain ID: {new_dispute.chain_id}"
+        f"- Chain ID: {new_dispute.chain_id}\n"
         f"- Block Number: {new_dispute.blockNumber}"
     )
 
