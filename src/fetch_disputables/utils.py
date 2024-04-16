@@ -72,6 +72,7 @@ class NewDispute:
 
 class MonitoredFeedInfo(TypedDict):
     datafeed_querytag: str
+    datafeed_source: object
     trusted_value: float
     percentage_change: float
     threshold_amount: float
@@ -244,6 +245,7 @@ def format_new_report_message(new_report: NewReport):
         f"- Block Number: {new_report.blockNumber}\n"
         f"- Monitored Feed:\n"
         f"  - Datafeed Querytag: {new_report.monitored_feed['datafeed_querytag']}\n"
+        f"  - Datafeed Source: {new_report.monitored_feed['datafeed_source']}\n"
         f"  - Trusted Value: {new_report.monitored_feed['trusted_value']}\n"
         f"  - Percentage Change: {new_report.monitored_feed['percentage_change']}\n"
         f"  - Threshold Amount: {new_report.monitored_feed['threshold_amount']}\n"
