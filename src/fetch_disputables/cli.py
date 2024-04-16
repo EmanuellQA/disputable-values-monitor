@@ -451,8 +451,8 @@ async def start(
 
                 if is_disputing and new_report.disputable:
                     new_dispute = await dispute(cfg, disp_cfg, account, new_report, gas_multiplier)
-                    success_msg = format_new_dispute_message(new_dispute)
                     if new_dispute:
+                        success_msg = format_new_dispute_message(new_dispute)
                         new_dispute_notification_task = create_async_task(
                             handle_notification_service,
                             subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Auto-Disputer began a dispute",
