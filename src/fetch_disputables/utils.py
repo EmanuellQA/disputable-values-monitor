@@ -2,11 +2,12 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 from typing import Optional
 from typing import Union
+from typing import TypedDict
 
 import asyncio
 from web3 import Web3
@@ -62,7 +63,19 @@ class NewDispute:
     initiator: str = ""
     chain_id: int = 0
     link: str = ""
+    blockNumber: int = 0
+    startDate: int = 0
+    voteRound: int = 0
+    fee: int = 0
+    voteRoundLength: int = 0
 
+
+class MonitoredFeedInfo(TypedDict):
+    datafeed_querytag: str
+    trusted_value: float
+    percentage_change: float
+    threshold_amount: float
+    threshold_metric: str
 
 @dataclass
 class NewReport:
@@ -82,6 +95,8 @@ class NewReport:
     reporter: str = ""
     contract_address: str = ""
     removable: Optional[bool] = False
+    blockNumber: int = 0
+    monitored_feed: MonitoredFeedInfo = field(default_factory=dict)
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -196,6 +211,22 @@ def get_report_time_margin():
 def create_async_task(function, *args, **kwargs):
     return asyncio.create_task(function(*args, **kwargs))
 
+def format_new_dispute_message(new_dispute: NewDispute):
+    return (
+        f"- Dispute Tx link: {new_dispute.link}\n"
+        f"- Dispute ID: {new_dispute.dispute_id}\n"
+        f"- Query ID: {new_dispute.query_id}\n"
+        f"- Timestamp: {new_dispute.timestamp}\n"
+        f"- Reporter: {new_dispute.reporter}\n"
+        f"- Initiator: {new_dispute.initiator}\n"
+        f"- Start date: {new_dispute.startDate}\n"
+        f"- Vote round: {new_dispute.voteRound}\n"
+        f"- Fee: {new_dispute.fee}\n"
+        f"- Vote round length: {new_dispute.voteRoundLength}\n"
+        f"- Chain ID: {new_dispute.chain_id}"
+        f"- Block Number: {new_dispute.blockNumber}"
+    )
+
 def format_new_report_message(new_report: NewReport):
     return (
         f"- Tx link: {new_report.link}\n"
@@ -210,6 +241,13 @@ def format_new_report_message(new_report: NewReport):
         f"- Disputable: {new_report.disputable}\n"
         f"- Chain ID: {new_report.chain_id}"
         f"- Removable: {new_report.removable}\n"
+        f"- Block Number: {new_report.blockNumber}\n"
+        f"- Monitored Feed:\n"
+        f"  - Datafeed Querytag: {new_report.monitored_feed['datafeed_querytag']}\n"
+        f"  - Trusted Value: {new_report.monitored_feed['trusted_value']}\n"
+        f"  - Percentage Change: {new_report.monitored_feed['percentage_change']}\n"
+        f"  - Threshold Amount: {new_report.monitored_feed['threshold_amount']}\n"
+        f"  - Threshold Metric: {new_report.monitored_feed['threshold_metric']}\n"
     )
 
 class NotificationSources:
