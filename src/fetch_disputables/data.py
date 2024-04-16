@@ -616,6 +616,7 @@ async def parse_new_report_event(
 
         new_report.monitored_feed = {
             "datafeed_querytag": query_tag,
+            "datafeed_source": monitored_feed.feed.source,
             "trusted_value": monitored_feed.trusted_val,
             "percentage_change": monitored_feed.percent_diff,
             "threshold_amount": monitored_feed.threshold.amount,
