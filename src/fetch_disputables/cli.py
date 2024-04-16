@@ -38,7 +38,9 @@ from fetch_disputables.utils import get_service_notification, get_reporters
 from fetch_disputables.utils import get_report_intervals, get_report_time_margin
 from fetch_disputables.utils import get_env_reporters_balance_threshold
 from fetch_disputables.utils import create_async_task
-from fetch_disputables.utils import format_new_report_message
+from fetch_disputables.utils import (
+    format_new_report_message, format_new_dispute_message
+)
 from fetch_disputables.data import get_fetch_balance, get_pls_balance
 from fetch_disputables.utils import NotificationSources
 from fetch_disputables.remove_report import remove_report
@@ -370,19 +372,7 @@ async def start(
 
                     if new_dispute.reporter in reporters:
                         subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Dispute against Reporter {new_dispute.reporter}"
-                        msg = (
-                            f"- Dispute Tx link: {new_dispute.link}\n"
-                            f"- Dispute ID: {new_dispute.dispute_id}\n"
-                            f"- Query ID: {new_dispute.query_id}\n"
-                            f"- Timestamp: {new_dispute.timestamp}\n"
-                            f"- Reporter: {new_dispute.reporter}\n"
-                            f"- Initiator: {new_dispute.initiator}\n"
-                            f"- Start date: {new_dispute.startDate}\n"
-                            f"- Vote round: {new_dispute.voteRound}\n"
-                            f"- Fee: {new_dispute.fee}\n"
-                            f"- Vote round length: {new_dispute.voteRoundLength}\n"
-                            f"- Chain ID: {new_dispute.chain_id}"
-                        )
+                        msg = format_new_dispute_message(new_dispute)
                         new_dispute_against_reporter_notification_task = create_async_task(
                             handle_notification_service,
                             subject=subject,
@@ -460,13 +450,14 @@ async def start(
                 )
 
                 if is_disputing and new_report.disputable:
-                    success_msg = await dispute(cfg, disp_cfg, account, new_report, gas_multiplier)
-                    if success_msg:
+                    new_dispute = await dispute(cfg, disp_cfg, account, new_report, gas_multiplier)
+                    success_msg = format_new_dispute_message(new_dispute)
+                    if new_dispute:
                         new_dispute_notification_task = create_async_task(
                             handle_notification_service,
                             subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Auto-Disputer began a dispute",
                             msg=(
-                                f"- {success_msg}\n"
+                                f"{success_msg}"
                                 "\nAuto-Disputed Report:\n"
                                 f"{format_new_report_message(new_report)}"
                             ),
