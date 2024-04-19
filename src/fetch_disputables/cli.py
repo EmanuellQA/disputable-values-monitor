@@ -594,6 +594,9 @@ async def is_threshold_reached(managed_feeds: ManagedFeeds):
         return False
     price, query_id = latest_report["price"], latest_report["query_id"]
     current_price = await managed_feeds.fetch_new_datapoint(query_id)
+    if current_price is None:
+        logger.error("Failed to fetch current price from managed feeds")
+        return False
     percentage_change = float(abs(current_price - price)) / price
     percentage_change_threshold = float(os.getenv('PERCENTAGE_CHANGE_THRESHOLD', 0.005))
     return percentage_change >= percentage_change_threshold
