@@ -3,6 +3,7 @@ import logging
 import warnings
 from time import sleep
 from decimal import *
+from datetime import datetime
 
 import os
 
@@ -653,13 +654,17 @@ async def send_alerts_when_all_reporters_stops_reporting(
 
         if len(greater_than_all_reporters_interval) and all(greater_than_all_reporters_interval):
             subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - All Reporters stop reporting"
+
+            reporters_utc_timestamps = [
+                f"{reporter}: {datetime.utcfromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')} ({last_timestamp})"
+                for reporter, (last_timestamp, _) in reporters_last_timestamp.items()
+            ]
+
             msg = f"""
                 All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes\n
                 Trigger: {trigger}\n
-                Trigger timestamp: {report_trigger['timestamp']}\n
-                Reporters last timestamp: {[
-                    f"{reporter}: {last_timestamp}" for reporter, (last_timestamp, _) in reporters_last_timestamp.items()
-                ]}
+                Trigger timestamp: {datetime.utcfromtimestamp(report_trigger["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')} ({report_trigger["timestamp"]})\n
+                Reporters last timestamp UTC: {reporters_utc_timestamps}
             """
             all_reporters_stop_reporting_notification_task = create_async_task(
                 handle_notification_service,
