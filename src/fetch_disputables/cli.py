@@ -662,7 +662,9 @@ async def send_alerts_when_all_reporters_stops_reporting(
 
             msg = f"""
                 All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes\n
-                Trigger: {trigger}\n
+                Alert timestamp: {datetime.utcfromtimestamp(current_timestamp).strftime('%Y-%m-%d %H:%M:%S')} ({current_timestamp})\n
+                Alert timestamp - event trigger timestamp: {(current_timestamp - report_trigger["timestamp"]) // 60} minutes ({current_timestamp - report_trigger["timestamp"]} seconds)\n
+                Trigger event: {trigger}\n
                 Trigger timestamp: {datetime.utcfromtimestamp(report_trigger["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')} ({report_trigger["timestamp"]})\n
                 Reporters last timestamp UTC: {reporters_utc_timestamps}
             """
