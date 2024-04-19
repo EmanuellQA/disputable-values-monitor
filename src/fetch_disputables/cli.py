@@ -616,8 +616,14 @@ async def send_alerts_when_all_reporters_stops_reporting(
 ):
     global is_all_reporters_alert_sent
     try:
-        if not await is_threshold_reached(managed_feeds) and not is_time_limit_reached():
+        threshold_reached = await is_threshold_reached(managed_feeds)
+        time_limit_reached = is_time_limit_reached()
+
+        if not threshold_reached and not time_limit_reached:
             return
+        
+        trigger = "percentage_threshold" if threshold_reached else "time_limit"
+        logger.info(f"Trigger detected - {trigger}")
 
         if not report_trigger["is_triggered"]:
             report_trigger["timestamp"] = int(pd.Timestamp.now("UTC").timestamp())
@@ -647,7 +653,14 @@ async def send_alerts_when_all_reporters_stops_reporting(
 
         if len(greater_than_all_reporters_interval) and all(greater_than_all_reporters_interval):
             subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - All Reporters stop reporting"
-            msg = f"All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes"
+            msg = f"""
+                All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes\n
+                Trigger: {trigger}\n
+                Trigger timestamp: {report_trigger['timestamp']}\n
+                Reporters last timestamp: {[
+                    f"{reporter}: {last_timestamp}" for reporter, (last_timestamp, _) in reporters_last_timestamp.items()
+                ]}
+            """
             all_reporters_stop_reporting_notification_task = create_async_task(
                 handle_notification_service,
                 subject=subject,
