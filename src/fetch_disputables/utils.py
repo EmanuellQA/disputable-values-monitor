@@ -82,6 +82,7 @@ class NewReport:
     reporter: str = ""
     contract_address: str = ""
     removable: Optional[bool] = False
+    is_managed_feed: bool = False
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
