@@ -41,9 +41,11 @@ from fetch_disputables.utils import create_async_task
 from fetch_disputables.utils import format_new_report_message
 from fetch_disputables.data import get_fetch_balance, get_pls_balance
 from fetch_disputables.utils import NotificationSources
+from fetch_disputables.remove_report import remove_report
+from fetch_disputables.ManagedFeeds import ManagedFeeds
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv('.env')
 
 notification_service: list[str] = get_service_notification()
 notification_service_results: dict = {
@@ -108,6 +110,18 @@ notification_service_results: dict = {
         }
     },
     NotificationSources.DISPUTER_BALANCE_THRESHOLD: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.REMOVE_REPORT: {
         "sms": None,
         "email": None,
         "slack": None,
@@ -191,8 +205,18 @@ def print_title_info() -> None:
     type=int,
     default=1
 )
+@click.option(
+    "--skip-processed-reports",
+    "-spr",
+    "skip_processed_reports",
+    help="Skip reports already processed to avoid repetitive workload",
+    nargs=1,
+    type=bool,
+    default=False,
+    is_flag=True
+)
 @async_run
-async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int) -> None:
+async def main(all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int, skip_processed_reports: bool) -> None:
     """CLI dashboard to display recent values reported to Fetch oracles."""
     global ses, slack, team_ses
     team_ses = TeamSes()
@@ -208,17 +232,19 @@ async def main(all_values: bool, wait: int, account_name: str, is_disputing: boo
         account_name=account_name,
         is_disputing=is_disputing,
         confidence_threshold=confidence_threshold,
-        gas_multiplier=gas_multiplier
+        gas_multiplier=gas_multiplier,
+        skip_processed_reports=skip_processed_reports
     )
 
 
 async def start(
-    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int
+    all_values: bool, wait: int, account_name: str, is_disputing: bool, confidence_threshold: float, gas_multiplier: int, skip_processed_reports: bool
 ) -> None:
     """Start the CLI dashboard."""
     cfg = TelliotConfig()
     cfg.main.chain_id = int(os.getenv("NETWORK_ID", "943"))
     disp_cfg = AutoDisputerConfig()
+    managed_feeds = ManagedFeeds()
     print_title_info()
 
     from_number, recipients = get_twilio_info()
@@ -274,9 +300,11 @@ async def start(
         event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
 
         send_alerts_when_reporters_stops_reporting(reporters_last_timestamp)
+        send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp)
 
         reporters_pls_balance_task = create_async_task(
             update_reporters_pls_balance,
+            cfg,
             reporters,
             reporters_pls_balance
         )
@@ -380,8 +408,11 @@ async def start(
                     new_report = await parse_new_report_event(
                         cfg=cfg,
                         monitored_feeds=disp_cfg.monitored_feeds,
+                        managed_feeds=managed_feeds,
                         log=event,
                         confidence_threshold=confidence_threshold,
+                        displayed_events=displayed_events,
+                        skip_processed_reports=skip_processed_reports
                     )
                 except Exception as e:
                     logger.error(f"unable to parse new report event on chain_id {chain_id}: {e}")
@@ -455,6 +486,32 @@ async def start(
                             )
                         )
 
+                if new_report.removable:
+                    success_msg = await remove_report(cfg, managed_feeds, account, new_report, gas_multiplier)
+                    if success_msg:
+                        removable_notification_task = create_async_task(
+                            handle_notification_service,
+                            subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - Report Removed",
+                            msg=(
+                                f"Report Removed:\n"
+                                f"{format_new_report_message(new_report)}"
+                            ),
+                            notification_service=notification_service,
+                            sms_message_function=lambda : alert(all_values, new_report, recipients, from_number),
+                            ses=ses,
+                            slack=slack,
+                            notification_service_results=notification_service_results,
+                            notification_source=NotificationSources.REMOVE_REPORT
+                        )
+                        removable_notification_task.add_done_callback(
+                            lambda future_obj: notification_task_callback(
+                                msg=f"Report Removed",
+                                notification_service_results=notification_service_results,
+                                notification_source=NotificationSources.REMOVE_REPORT
+                            )
+                        )
+                    
+
                 display_rows.append(
                     (
                         new_report.tx_hash,
@@ -513,6 +570,53 @@ def update_reporter_last_timestamp(
     )
     reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
 
+is_all_reporters_alert_sent = False
+def send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
+    global is_all_reporters_alert_sent
+    try:
+        ALL_REPORTERS_INTERVAL = int(os.getenv("ALL_REPORTERS_INTERVAL", None))
+        if ALL_REPORTERS_INTERVAL is None: return
+
+        from_number, recipients = get_twilio_info()
+
+        current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+
+        greater_than_all_reporters_interval = []
+        for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
+            if current_timestamp - last_timestamp > ALL_REPORTERS_INTERVAL:
+                greater_than_all_reporters_interval.append(True)
+            else:
+                is_all_reporters_alert_sent = False
+                greater_than_all_reporters_interval.append(False)
+
+        if is_all_reporters_alert_sent:
+            return
+
+        if len(greater_than_all_reporters_interval) and all(greater_than_all_reporters_interval):
+            subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - All Reporters stop reporting"
+            msg = f"All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes"
+            all_reporters_stop_reporting_notification_task = create_async_task(
+                handle_notification_service,
+                subject=subject,
+                msg=msg,
+                notification_service=notification_service,
+                sms_message_function=lambda : generic_alert(from_number=from_number, recipients=recipients, msg=f"{subject}\n{msg}"),
+                ses=ses,
+                slack=slack,
+                notification_service_results=notification_service_results,
+                notification_source=NotificationSources.REPORTER_STOP_REPORTING
+            )
+            all_reporters_stop_reporting_notification_task.add_done_callback(
+                lambda future_obj: notification_task_callback(
+                    msg=f"All Reporters stop reporting",
+                    notification_service_results=notification_service_results,
+                    notification_source=NotificationSources.REPORTER_STOP_REPORTING
+                )
+            )
+            is_all_reporters_alert_sent = True
+    except Exception as e:
+        logger.error(f"Error in send_alerts_when_all_reporters_stops_reporting: {e}")
+
 def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
     from_number, recipients = get_twilio_info()
 
@@ -558,11 +662,12 @@ def send_alerts_when_reporters_stops_reporting(reporters_last_timestamp: dict[st
         reporters_last_timestamp[reporter] = (last_timestamp, True)
 
 async def update_reporters_pls_balance(
+    telliot_config: TelliotConfig,
     reporters: list[str],
     reporters_pls_balance: dict[str, tuple[Decimal, bool]],
 ):
     for reporter in reporters:
-        balance = await get_pls_balance(reporter)
+        balance = await get_pls_balance(telliot_config, reporter)
         old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
         reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
 
@@ -623,7 +728,7 @@ async def update_disputer_balances(
     try:
         disputer_address = Web3.toChecksumAddress(disputer_account.address)
         old_balance_pls, alert_sent_pls = disputer_balances.get('PLS', (0, False))
-        disputer_pls_balance = await get_pls_balance(disputer_address)
+        disputer_pls_balance = await get_pls_balance(telliot_config, disputer_address)
         disputer_balances['PLS'] = (disputer_pls_balance, disputer_pls_balance == old_balance_pls and alert_sent_pls)
 
         old_balance_fetch, alert_sent_fetch = disputer_balances.get('FETCH', (0, False))
