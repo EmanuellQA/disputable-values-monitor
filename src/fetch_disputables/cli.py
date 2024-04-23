@@ -392,6 +392,8 @@ async def start(
                     continue
                 displayed_events.add(new_report.tx_hash)
 
+                logger.debug(f"Found report, hash: {new_report.tx_hash}")
+
                 if new_report.reporter in reporters:
                     update_reporter_last_timestamp(
                         reporters_last_timestamp,
