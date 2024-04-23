@@ -4,7 +4,9 @@ rm -r ./build
 rm -r ./lib
 rm -r ./venv
 
-git submodule foreach git submodule update
+git submodule update --init --recursive
+
+# git submodule foreach git submodule update
 
 python3.9 -m venv venv
 
