@@ -15,14 +15,16 @@ import click
 from chained_accounts import ChainedAccount
 from chained_accounts import find_accounts
 from telliot_core.apps.telliot_config import TelliotConfig
+from telliot_core.model.endpoints import RPCEndpoint
 from telliot_feeds.utils.cfg import setup_account
+from fetch_disputables.handle_connect_endpoint import get_endpoint
 
 from dotenv import load_dotenv
 load_dotenv()
 
 def get_tx_explorer_url(tx_hash: str, cfg: TelliotConfig) -> str:
     """Get transaction explorer URL."""
-    explorer: str = cfg.get_endpoint().explorer
+    explorer: str = get_endpoint(cfg, cfg.main.chain_id).explorer
     if explorer is not None and explorer[-1] != "/": explorer += "/"
     if explorer is not None:
         return explorer + "tx/" + tx_hash
@@ -79,6 +81,7 @@ class NewReport:
     status_str: str = ""
     reporter: str = ""
     contract_address: str = ""
+    removable: Optional[bool] = False
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -206,6 +209,7 @@ def format_new_report_message(new_report: NewReport):
         f"- Value: {new_report.value}\n"
         f"- Disputable: {new_report.disputable}\n"
         f"- Chain ID: {new_report.chain_id}"
+        f"- Removable: {new_report.removable}\n"
     )
 
 class NotificationSources:
@@ -215,3 +219,4 @@ class NotificationSources:
     REPORTER_STOP_REPORTING = "Reporter stop reporting"
     REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"
     DISPUTER_BALANCE_THRESHOLD = "Disputer balance threshold"
+    REMOVE_REPORT = "Remove Report"
