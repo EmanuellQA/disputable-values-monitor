@@ -36,7 +36,7 @@ class Ses:
         }        
 
     def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
-        if new_report and not self.all_values and not new_report.disputable:
+        if new_report and not self.all_values and not new_report.disputable and not new_report.removable:
             return
         
         send_args = self.get_send_args(subject, msg)
