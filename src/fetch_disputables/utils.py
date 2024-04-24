@@ -209,7 +209,7 @@ def format_new_report_message(new_report: NewReport):
         f"- Currency: {new_report.currency}\n"
         f"- Value: {new_report.value}\n"
         f"- Disputable: {new_report.disputable}\n"
-        f"- Chain ID: {new_report.chain_id}"
+        f"- Chain ID: {new_report.chain_id}\n"
         f"- Removable: {new_report.removable}\n"
     )
 
