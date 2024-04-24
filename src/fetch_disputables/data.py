@@ -591,6 +591,8 @@ async def parse_new_report_event(
         )
         logger.info(f"Removable: {removable}")
         new_report.removable = removable
+        if new_report.removable:
+            new_report.status_str = "removable"
         return new_report
 
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)
