@@ -193,7 +193,9 @@ async def handle_notification_service(
     if "slack" in notification_service:
         logger.info(f"Sending slack message - {notification_source}")
         try:
-            slack_response = slack.send_message(subject=subject, msg=msg, new_report=new_report)
+            slack_response = slack.send_message(
+                subject=subject, msg=msg, new_report=new_report, notification_source=notification_source
+            )
             notification_service_results[notification_source]["slack"] = slack_response
             notification_service_results[notification_source]["error"]["slack"] = None
             if slack_response != None:

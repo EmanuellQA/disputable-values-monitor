@@ -100,6 +100,18 @@ notification_service_results: dict = {
             "team_email": None,
         }
     },
+    NotificationSources.ALL_REPORTERS_STOP_REPORTING: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
     NotificationSources.REPORTER_BALANCE_THRESHOLD: {
         "sms": None,
         "email": None,
@@ -671,13 +683,13 @@ async def send_alerts_when_all_reporters_stops_reporting(
                 ses=ses,
                 slack=slack,
                 notification_service_results=notification_service_results,
-                notification_source=NotificationSources.REPORTER_STOP_REPORTING
+                notification_source=NotificationSources.ALL_REPORTERS_STOP_REPORTING
             )
             all_reporters_stop_reporting_notification_task.add_done_callback(
                 lambda future_obj: notification_task_callback(
                     msg=f"All Reporters stop reporting",
                     notification_service_results=notification_service_results,
-                    notification_source=NotificationSources.REPORTER_STOP_REPORTING
+                    notification_source=NotificationSources.ALL_REPORTERS_STOP_REPORTING
                 )
             )
             is_all_reporters_alert_sent = True
