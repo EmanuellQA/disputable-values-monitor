@@ -624,11 +624,34 @@ async def update_disputer_balances(
         disputer_address = Web3.toChecksumAddress(disputer_account.address)
         old_balance_pls, alert_sent_pls = disputer_balances.get('PLS', (0, False))
         disputer_pls_balance = await get_pls_balance(disputer_address)
-        disputer_balances['PLS'] = (disputer_pls_balance, disputer_pls_balance == old_balance_pls and alert_sent_pls)
+
+        disputer_pls_balance_threshold = os.getenv("DISPUTER_PLS_BALANCE_THRESHOLD")
+        disputer_fetch_balance_threshold = os.getenv("DISPUTER_FETCH_BALANCE_THRESHOLD")
+
+        disputer_balance_thresholds = {
+            'PLS': Decimal(disputer_pls_balance_threshold) if disputer_pls_balance_threshold is not None else None,
+            'FETCH': Decimal(disputer_fetch_balance_threshold) if disputer_fetch_balance_threshold is not None else None
+        }
+
+        if disputer_balance_thresholds['PLS'] is None:
+            logger.warning("DISPUTER_PLS_BALANCE_THRESHOLD environment variable not set, using old balance to check if alert should be sent")
+            set_alert_sent_pls = disputer_pls_balance == old_balance_pls and alert_sent_pls
+        else:
+            set_alert_sent_pls = disputer_pls_balance <= disputer_balance_thresholds['PLS'] and alert_sent_pls
+
+        
+        disputer_balances['PLS'] = (disputer_pls_balance, set_alert_sent_pls)
 
         old_balance_fetch, alert_sent_fetch = disputer_balances.get('FETCH', (0, False))
         disputer_fetch_balance = await get_fetch_balance(telliot_config, disputer_address)
-        disputer_balances['FETCH'] = (disputer_fetch_balance, disputer_fetch_balance == old_balance_fetch and alert_sent_fetch)
+
+        if disputer_balance_thresholds['FETCH'] is None:
+            logger.warning("DISPUTER_FETCH_BALANCE_THRESHOLD environment variable not set, using old balance to check if alert should be sent")
+            set_alert_sent_fetch = disputer_fetch_balance == old_balance_fetch and alert_sent_fetch
+        else:
+            set_alert_sent_fetch = disputer_fetch_balance <= disputer_balance_thresholds['FETCH'] and alert_sent_fetch
+        
+        disputer_balances['FETCH'] = (disputer_fetch_balance, set_alert_sent_fetch)
     except Exception as e:
         logger.error("Error updating disputer balances")
         logger.error(e)
