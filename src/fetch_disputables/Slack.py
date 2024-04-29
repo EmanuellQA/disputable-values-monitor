@@ -60,7 +60,7 @@ class Slack:
     def send_message(
         self, subject: str, msg: str, new_report: NewReport = None, notification_source: NotificationSources = None
     ):
-        if new_report and not self.all_values and not new_report.disputable:
+        if new_report and not self.all_values and not new_report.disputable and not new_report.removable:
             return
         
         blocks = [
