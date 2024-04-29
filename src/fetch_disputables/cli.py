@@ -564,7 +564,7 @@ async def update_reporters_pls_balance(
     for reporter in reporters:
         balance = await get_pls_balance(reporter)
         old_balance, alert_sent = reporters_pls_balance.get(reporter, (0, False))
-        reporters_pls_balance[reporter] = (balance, balance == old_balance and alert_sent)
+        reporters_pls_balance[reporter] = (balance, balance <= reporters_pls_balance_threshold[reporter] and alert_sent)
 
 async def update_reporters_fetch_balance(
     cfg: TelliotConfig,
@@ -574,7 +574,7 @@ async def update_reporters_fetch_balance(
     for reporter in reporters:
         old_fetch_balance, alert_sent = reporters_fetch_balance.get(reporter, (0, False))
         reporter_fetch_balance = await get_fetch_balance(cfg, reporter)
-        reporters_fetch_balance[reporter] = (reporter_fetch_balance, reporter_fetch_balance == old_fetch_balance and alert_sent)
+        reporters_fetch_balance[reporter] = (reporter_fetch_balance, reporter_fetch_balance <= reporters_fetch_balance_threshold[reporter] and alert_sent)
 
 def alert_reporters_balance_threshold(
     reporters_balance: ReportersBalance,
