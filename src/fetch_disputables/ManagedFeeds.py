@@ -20,6 +20,16 @@ class ManagedFeeds:
         self.has_managed_feeds = False
         self.managed_feeds: dict[query_id, FeedConfig] = self._get_managed_feeds_from_yaml()
 
+    async def fetch_new_datapoint(self, query_id: str):
+        try:
+            datafeed = self._map_queryId_to_datafeed(query_id)
+            trusted_val, _ = await datafeed.source.fetch_new_datapoint()
+            return trusted_val
+        except Exception as e:
+            logger.error("Error while fetching new datapoint")
+            logger.error(e)
+            return None
+
     async def is_report_removable(self, monitored_feed: MonitoredFeed, query_id: str, cfg: TelliotConfig, value: float):
         try:
             monitored_feed.feed = self._map_queryId_to_datafeed(query_id)
