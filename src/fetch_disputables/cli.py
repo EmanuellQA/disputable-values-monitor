@@ -505,7 +505,7 @@ async def start(
                             )
                         )
 
-                if new_report.removable:
+                if is_disputing and new_report.removable:
                     success_msg = await remove_report(cfg, managed_feeds, account, new_report, gas_multiplier)
                     if success_msg:
                         removable_notification_task = create_async_task(
