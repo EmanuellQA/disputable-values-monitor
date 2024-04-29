@@ -592,6 +592,7 @@ def alert_reporters_balance_threshold(
             f"Reporter {reporter} {asset} balance is less than {reporters_balance_threshold[reporter]}\n"
             f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}"
         )
+        msg_callback = f"Reporter {asset} balance threshold met"
         reporter_balance_threshold_notification_task = create_async_task(
             handle_notification_service,
             subject=subject,
@@ -604,8 +605,8 @@ def alert_reporters_balance_threshold(
             notification_source=NotificationSources.REPORTER_BALANCE_THRESHOLD
         )
         reporter_balance_threshold_notification_task.add_done_callback(
-            lambda future_obj: notification_task_callback(
-                msg=f"Reporter {asset} balance threshold met",
+            lambda future_obj, msg_callback=msg_callback: notification_task_callback(
+                msg=msg_callback,
                 notification_service_results=notification_service_results,
                 notification_source=NotificationSources.REPORTER_BALANCE_THRESHOLD
             )
@@ -691,6 +692,7 @@ def alert_on_disputer_balances_threshold(
             f"Current {asset} balance: {balance} in network ID {os.getenv('NETWORK_ID', '943')}\n"
             f"Disputer address: {disputer_account.address}"
         )
+        msg_callback = f"Disputer {asset} balance threshold met"
         disputer_balance_threshold_notification_task = create_async_task(
             handle_notification_service,
             subject=subject,
@@ -703,8 +705,8 @@ def alert_on_disputer_balances_threshold(
             notification_source=NotificationSources.DISPUTER_BALANCE_THRESHOLD
         )
         disputer_balance_threshold_notification_task.add_done_callback(
-            lambda future_obj: notification_task_callback(
-                msg=f"Disputer {asset} balance threshold met",
+            lambda future_obj, msg_callback=msg_callback: notification_task_callback(
+                msg=msg_callback,
                 notification_service_results=notification_service_results,
                 notification_source=NotificationSources.DISPUTER_BALANCE_THRESHOLD
             )
