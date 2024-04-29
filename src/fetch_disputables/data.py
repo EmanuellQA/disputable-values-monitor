@@ -176,6 +176,8 @@ class MonitoredFeed(Base):
                     Threshold: {self.threshold.amount * 100}%
                     Is percentage change greater than threshold: {float(abs(percent_diff)) >= self.threshold.amount}
                 """)
+                self.trusted_val = trusted_val
+                self.percent_diff = float(abs(percent_diff))
                 return float(abs(percent_diff)) >= self.threshold.amount
 
             elif self.threshold.metric == Metrics.Range:
@@ -452,6 +454,7 @@ async def parse_new_dispute_event(
     new_dispute.fee = event_data.args._fee
     new_dispute.voteRoundLength = event_data.args._voteRoundLength
     new_dispute.link = get_tx_explorer_url(tx_hash=new_dispute.tx_hash, cfg=cfg)
+    new_dispute.blockNumber = event_data.blockNumber
 
     return new_dispute
 
@@ -505,6 +508,7 @@ async def parse_new_report_event(
     new_report.currency = getattr(q, "currency", "N/A")
     new_report.reporter = event_data.args._reporter
     new_report.contract_address = event_data.address
+    new_report.blockNumber = event_data.blockNumber
 
     try:
         new_report.value = q.value_type.decode(event_data.args._value)
@@ -514,6 +518,7 @@ async def parse_new_report_event(
     # if query of event matches a query type of the monitored feeds, fill the query parameters
 
     monitored_feed = None
+    query_tag = None
 
     for mf in monitored_feeds:
         try:
@@ -536,7 +541,8 @@ async def parse_new_report_event(
         if feed_qid == new_report.query_id:
             if new_report.query_type == "SpotPrice":
                 catalog_entry = query_catalog.find(query_id=new_report.query_id)
-                mf.feed = CATALOG_FEEDS.get(catalog_entry[0].tag)
+                query_tag = catalog_entry[0].tag
+                mf.feed = CATALOG_FEEDS.get(query_tag)
 
             else:
 
@@ -565,10 +571,10 @@ async def parse_new_report_event(
         threshold = Threshold(metric=Metrics.Percentage, amount=confidence_threshold)
         catalog = query_catalog.find(query_id=new_report.query_id)
         if catalog:
-            tag = catalog[0].tag
-            feed = CATALOG_FEEDS.get(tag)
+            query_tag = catalog[0].tag
+            feed = CATALOG_FEEDS.get(query_tag)
             if feed is None:
-                logger.error(f"Unable to find feed for tag {tag}")
+                logger.error(f"Unable to find feed for tag {query_tag}")
                 return None
         else:
             # have to check if feed's source supports generic queries and isn't a manual source
@@ -592,6 +598,7 @@ async def parse_new_report_event(
     logger.debug(f"Monitored feed: {managed_feeds.is_managed_feed(new_report.query_id)} - queryId {new_report.query_id} - report_hash={new_report.tx_hash}")
     if managed_feeds.is_managed_feed(new_report.query_id):
         logger.info(f"Found a managed feed report - {new_report.query_id}, report_hash={new_report.tx_hash}")
+        new_report.is_managed_feed = True
         new_report.status_str = disputable_str(False, new_report.query_id)
         new_report.disputable = False
         removable = await managed_feeds.is_report_removable(
@@ -599,6 +606,8 @@ async def parse_new_report_event(
         )
         logger.info(f"Removable: {removable}")
         new_report.removable = removable
+        if new_report.removable:
+            new_report.status_str = "removable"
         return new_report
 
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)
@@ -617,6 +626,14 @@ async def parse_new_report_event(
         new_report.status_str = disputable_str(disputable, new_report.query_id)
         new_report.disputable = disputable
 
+        new_report.monitored_feed = {
+            "datafeed_querytag": query_tag,
+            "datafeed_source": monitored_feed.feed.source,
+            "trusted_value": monitored_feed.trusted_val,
+            "percentage_change": monitored_feed.percent_diff,
+            "threshold_amount": monitored_feed.threshold.amount,
+            "threshold_metric": monitored_feed.threshold.metric
+        }
         return new_report
 
 

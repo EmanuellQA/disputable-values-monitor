@@ -1,24 +1,28 @@
 """Utilities for the auto-disputer on Fetch on any EVM network"""
-from typing import Optional
+from typing import Optional, Union
 
 from chained_accounts import ChainedAccount
 from telliot_core.apps.telliot_config import TelliotConfig
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
+from hexbytes import HexBytes
+
+from fetch_disputables.utils import Topics
 from fetch_disputables.config import AutoDisputerConfig
 from fetch_disputables.data import get_contract
 from fetch_disputables.utils import get_logger
-from fetch_disputables.utils import NewReport
+from fetch_disputables.utils import NewReport, NewDispute
 from fetch_disputables.handle_connect_endpoint import get_endpoint
 from fetch_disputables.utils import get_tx_explorer_url
+from fetch_disputables.data import parse_new_dispute_event
 
 logger = get_logger(__name__)
 
 
 async def dispute(
     cfg: TelliotConfig, disp_cfg: AutoDisputerConfig, account: Optional[ChainedAccount], new_report: NewReport, gas_multiplier: int = 1
-) -> str:
+) -> Union[NewDispute, str]:
     """Main dispute logic for auto-disputer"""
 
     if not disp_cfg.monitored_feeds:
@@ -156,8 +160,16 @@ async def dispute(
     else:
         dispute_tx_link = get_tx_explorer_url(str(tx_receipt.transactionHash.hex()), cfg)
 
+    new_dispute = None
+    for log in tx_receipt.logs:
+        if HexBytes(Topics.NEW_DISPUTE) in log.topics:
+            new_dispute = await parse_new_dispute_event(
+                cfg=cfg,
+                log=log
+            )
+
     logger.info("Dispute Tx Link: " + dispute_tx_link)
-    return "Dispute Tx Link: " + dispute_tx_link
+    return new_dispute
 
 def get_gas_price(web3, gas_multiplier) -> Optional[float]:
     """Fetches the current gas price from an EVM network and returns
