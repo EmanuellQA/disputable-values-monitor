@@ -63,8 +63,8 @@ class Ses:
             return None
         return responses
 
-    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> Union[list[dict], None]:
-        if new_report and not self.all_values and not new_report.disputable:
+    def send_email(self, subject: str, msg: str, new_report: NewReport = None) -> dict:
+        if new_report and not self.all_values and not new_report.disputable and not new_report.removable:
             return
         
         return self._send_emails(subject, msg, new_report)

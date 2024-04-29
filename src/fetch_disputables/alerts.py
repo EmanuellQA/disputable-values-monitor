@@ -90,9 +90,9 @@ def alert(all_values: bool, new_report: NewReport, recipients: List[str], from_n
         return
 
     # Account for unsupported queryIDs
-    if new_report.disputable is not None:
-        if new_report.disputable:
-            msg = generate_alert_msg(True, new_report.link)
+    if new_report.disputable is not None or new_report.removable is not None:
+        if new_report.disputable or new_report.removable:
+            msg = generate_alert_msg(True, new_report.link, new_report.removable)
 
     # If user wants ALL NewReports
     if all_values:
@@ -100,15 +100,17 @@ def alert(all_values: bool, new_report: NewReport, recipients: List[str], from_n
         send_text_msg(twilio_client, recipients, from_number, msg)
 
     else:
-        if new_report.disputable:
+        if new_report.disputable or new_report.removable:
             send_text_msg(twilio_client, recipients, from_number, msg)
 
 
-def generate_alert_msg(disputable: bool, link: str) -> str:
+def generate_alert_msg(disputable: bool, link: str, removable: bool = False) -> str:
     """Generate an alert message string that
     includes a link to a relevant expolorer."""
 
     if disputable:
+        if removable:
+            return f"\n!!REMOVABLE VALUE!!\n{link}"
         return f"\n!!DISPUTABLE VALUE!!\n{link}"
     else:
         return f"\n!!NEW VALUE!!\n{link}"
@@ -191,7 +193,9 @@ async def handle_notification_service(
     if "slack" in notification_service:
         logger.info(f"Sending slack message - {notification_source}")
         try:
-            slack_response = slack.send_message(subject=subject, msg=msg, new_report=new_report)
+            slack_response = slack.send_message(
+                subject=subject, msg=msg, new_report=new_report, notification_source=notification_source
+            )
             notification_service_results[notification_source]["slack"] = slack_response
             notification_service_results[notification_source]["error"]["slack"] = None
             if slack_response != None:
