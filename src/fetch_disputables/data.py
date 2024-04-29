@@ -589,6 +589,7 @@ async def parse_new_report_event(
     logger.debug(f"Monitored feed: {managed_feeds.is_managed_feed(new_report.query_id)} - queryId {new_report.query_id} - report_hash={new_report.tx_hash}")
     if managed_feeds.is_managed_feed(new_report.query_id):
         logger.info(f"Found a managed feed report - {new_report.query_id}, report_hash={new_report.tx_hash}")
+        new_report.is_managed_feed = True
         new_report.status_str = disputable_str(False, new_report.query_id)
         new_report.disputable = False
         removable = await managed_feeds.is_report_removable(
@@ -596,6 +597,8 @@ async def parse_new_report_event(
         )
         logger.info(f"Removable: {removable}")
         new_report.removable = removable
+        if new_report.removable:
+            new_report.status_str = "removable"
         return new_report
 
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)

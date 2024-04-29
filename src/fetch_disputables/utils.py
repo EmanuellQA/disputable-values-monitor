@@ -98,6 +98,7 @@ class NewReport:
     removable: Optional[bool] = False
     blockNumber: int = 0
     monitored_feed: MonitoredFeedInfo = field(default_factory=dict)
+    is_managed_feed: bool = False
 
 
 def disputable_str(disputable: Optional[bool], query_id: str) -> str:
@@ -240,7 +241,7 @@ def format_new_report_message(new_report: NewReport):
         f"- Currency: {new_report.currency}\n"
         f"- Value: {new_report.value}\n"
         f"- Disputable: {new_report.disputable}\n"
-        f"- Chain ID: {new_report.chain_id}"
+        f"- Chain ID: {new_report.chain_id}\n"
         f"- Removable: {new_report.removable}\n"
         f"- Block Number: {new_report.blockNumber}\n"
         f"- Monitored Feed:\n"

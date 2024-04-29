@@ -3,6 +3,7 @@ import logging
 import warnings
 from time import sleep
 from decimal import *
+from datetime import datetime
 
 import os
 
@@ -167,6 +168,13 @@ reporters_fetch_balance_threshold: ReportersBalanceThreshold = get_reporters_bal
 
 disputer_balances: dict[str, tuple[Decimal, bool]] = dict()
 
+latest_report = {
+    'price': 0.0,
+    'query_id': '0x0',
+    'timestamp': 0,
+    'initialized': False
+}
+
 warnings.simplefilter("ignore", UserWarning)
 price_aggregator_logger = logging.getLogger("telliot_feeds.sources.price_aggregator")
 price_aggregator_logger.handlers = [
@@ -302,7 +310,12 @@ async def start(
         event_lists += fetch360_events + fetch_flex_report_events + governance_dispute_events
 
         send_alerts_when_reporters_stops_reporting(reporters_last_timestamp)
-        send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp)
+
+        create_async_task(
+            send_alerts_when_all_reporters_stops_reporting,
+            reporters_last_timestamp,
+            managed_feeds
+        )
 
         reporters_pls_balance_task = create_async_task(
             update_reporters_pls_balance,
@@ -421,6 +434,12 @@ async def start(
                         new_report.reporter,
                         new_report.submission_timestamp
                     )
+
+                if new_report.is_managed_feed:
+                    latest_report["price"] = new_report.value
+                    latest_report["query_id"] = new_report.query_id
+                    latest_report["timestamp"] = new_report.submission_timestamp
+                    latest_report["initialized"] = True
     
                 # Refesh
                 clear_console()
@@ -477,7 +496,7 @@ async def start(
                             )
                         )
 
-                if new_report.removable:
+                if is_disputing and new_report.removable:
                     success_msg = await remove_report(cfg, managed_feeds, account, new_report, gas_multiplier)
                     if success_msg:
                         removable_notification_task = create_async_task(
@@ -561,31 +580,88 @@ def update_reporter_last_timestamp(
     )
     reporters_last_timestamp[reporter] = (last_timestamp, last_timestamp == timestamp and alert_sent)
 
+async def is_threshold_reached(managed_feeds: ManagedFeeds):
+    if latest_report['initialized'] is False:
+        return False
+    price, query_id = latest_report["price"], latest_report["query_id"]
+    current_price = await managed_feeds.fetch_new_datapoint(query_id)
+    if current_price is None:
+        logger.error("Failed to fetch current price from managed feeds")
+        return False
+    percentage_change = float(abs(current_price - price)) / price
+    percentage_change_threshold = float(os.getenv('PERCENTAGE_CHANGE_THRESHOLD', 0.005))
+    return percentage_change >= percentage_change_threshold
+
+def is_time_limit_reached():
+    if latest_report['initialized'] is False:
+        return False
+    timestamp = latest_report["timestamp"]
+    current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+    report_time_limit = int(os.getenv("REPORT_TIME_LIMIT", 3600))
+    return current_timestamp - timestamp >= report_time_limit
+
 is_all_reporters_alert_sent = False
-def send_alerts_when_all_reporters_stops_reporting(reporters_last_timestamp: dict[str, tuple[int, bool]]):
+report_trigger = {
+    'timestamp': 0,
+    'is_triggered': False
+}
+async def send_alerts_when_all_reporters_stops_reporting(
+    reporters_last_timestamp: dict[str, tuple[int, bool]],
+    managed_feeds: ManagedFeeds
+):
     global is_all_reporters_alert_sent
     try:
+        threshold_reached = await is_threshold_reached(managed_feeds)
+        time_limit_reached = is_time_limit_reached()
+
+        if not threshold_reached and not time_limit_reached:
+            return
+        
+        trigger = "percentage_threshold" if threshold_reached else "time_limit"
+        logger.info(f"Trigger detected - {trigger}")
+
+        if not report_trigger["is_triggered"]:
+            report_trigger["timestamp"] = int(pd.Timestamp.now("UTC").timestamp())
+            report_trigger["is_triggered"] = True
+
+        current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+
         ALL_REPORTERS_INTERVAL = int(os.getenv("ALL_REPORTERS_INTERVAL", None))
         if ALL_REPORTERS_INTERVAL is None: return
 
         from_number, recipients = get_twilio_info()
 
-        current_timestamp = int(pd.Timestamp.now("UTC").timestamp())
+        if current_timestamp - report_trigger["timestamp"] <= ALL_REPORTERS_INTERVAL:
+            return
 
         greater_than_all_reporters_interval = []
         for reporter, (last_timestamp, alert_sent) in reporters_last_timestamp.items():
-            if current_timestamp - last_timestamp > ALL_REPORTERS_INTERVAL:
-                greater_than_all_reporters_interval.append(True)
-            else:
-                is_all_reporters_alert_sent = False
+            if last_timestamp >= report_trigger["timestamp"]:
                 greater_than_all_reporters_interval.append(False)
+                is_all_reporters_alert_sent = False
+                report_trigger["is_triggered"] = False
+            else:
+                greater_than_all_reporters_interval.append(True)
 
         if is_all_reporters_alert_sent:
             return
 
         if len(greater_than_all_reporters_interval) and all(greater_than_all_reporters_interval):
             subject = f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - All Reporters stop reporting"
-            msg = f"All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes"
+
+            reporters_utc_timestamps = [
+                f"{reporter}: {datetime.utcfromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')} ({last_timestamp})"
+                for reporter, (last_timestamp, _) in reporters_last_timestamp.items()
+            ]
+
+            msg = f"""
+                All Reporters have not submitted a report in over {ALL_REPORTERS_INTERVAL // 60} minutes\n
+                Alert timestamp: {datetime.utcfromtimestamp(current_timestamp).strftime('%Y-%m-%d %H:%M:%S')} ({current_timestamp})\n
+                Alert timestamp - event trigger timestamp: {(current_timestamp - report_trigger["timestamp"]) // 60} minutes ({current_timestamp - report_trigger["timestamp"]} seconds)\n
+                Trigger event: {trigger}\n
+                Trigger timestamp: {datetime.utcfromtimestamp(report_trigger["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')} ({report_trigger["timestamp"]})\n
+                Reporters last timestamp UTC: {reporters_utc_timestamps}
+            """
             all_reporters_stop_reporting_notification_task = create_async_task(
                 handle_notification_service,
                 subject=subject,
