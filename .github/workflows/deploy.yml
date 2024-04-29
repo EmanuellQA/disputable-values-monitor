@@ -32,6 +32,8 @@ jobs:
        with:
          ref: ${{ github.ref_name }}
          submodules: recursive
+         token: ${{ secrets.TOKEN_GITHUB }}
+
 
      - name: Setup Python
        uses: actions/setup-python@v4
@@ -118,6 +120,7 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           submodules: recursive
+          token: ${{ secrets.TOKEN_GITHUB }}
 
       - name: Add profile credentials to ~/.aws/credentials
         run: |

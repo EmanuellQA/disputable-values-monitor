@@ -5,6 +5,7 @@ rm -r ./lib
 rm -r ./venv
 
 git submodule update --init --recursive
+git submodule update --remote --recursive
 
 # git submodule foreach git submodule update
 
