@@ -200,10 +200,11 @@ async def handle_notification_service(
             sms_response = sms_message_function(notification_source)
             if sms_response == None:
                 sms_response = f"SMS message sent - {notification_source}"
+                notification_service_results[notification_source]["error"]["sms"] = None
             elif isinstance(sms_response, str):
                 sms_response = f"SMS message not sent - {sms_response}"
+                notification_service_results[notification_source]["error"]["sms"] = sms_response
             notification_service_results[notification_source]["sms"] = sms_response
-            notification_service_results[notification_source]["error"]["sms"] = None
             logger.info(sms_response)
         except Exception as e:
             notification_service_results[notification_source]["error"]["sms"] = e
