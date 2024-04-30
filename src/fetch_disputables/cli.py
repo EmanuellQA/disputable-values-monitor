@@ -808,7 +808,7 @@ async def update_disputer_balances(
     try:
         disputer_address = Web3.toChecksumAddress(disputer_account.address)
         old_balance_pls, alert_sent_pls = disputer_balances.get('PLS', (0, False))
-        disputer_pls_balance = await get_pls_balance(disputer_address)
+        disputer_pls_balance = await get_pls_balance(telliot_config, disputer_address)
 
         disputer_pls_balance_threshold = os.getenv("DISPUTER_PLS_BALANCE_THRESHOLD")
         disputer_fetch_balance_threshold = os.getenv("DISPUTER_FETCH_BALANCE_THRESHOLD")
