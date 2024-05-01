@@ -19,7 +19,7 @@ from fetch_disputables.Ses import Ses
 from fetch_disputables.Slack import Slack
 
 from fetch_disputables.utils import get_logger
-from fetch_disputables.utils import NotificationSources
+from fetch_disputables.utils import NotificationSources, EnvironmentAlerts
 
 from dotenv import load_dotenv
 
@@ -58,8 +58,27 @@ class MockClient(TwilioHttpClient):
             response_text
         )
 
-def generic_alert(recipients: List[str], from_number: str, msg: str) -> None:
+def _map_notification_source_to_environment_alert(notification_source: NotificationSources) -> str:
+        notification_source_to_alert = {
+            NotificationSources.NEW_DISPUTE_AGAINST_REPORTER: 'DISPUTE_AGAINST_REPORTER',
+            NotificationSources.AUTO_DISPUTER_BEGAN_A_DISPUTE: 'BEGAN_DISPUTE',
+            NotificationSources.REMOVE_REPORT: 'REMOVE_REPORT',
+            NotificationSources.ALL_REPORTERS_STOP_REPORTING: 'ALL_REPORTERS_STOP',
+            NotificationSources.NEW_REPORT: 'DISPUTABLE_REPORT',
+            NotificationSources.REPORTER_STOP_REPORTING: 'REPORTER_STOP',
+            NotificationSources.REPORTER_BALANCE_THRESHOLD: 'REPORTER_BALANCE',
+            NotificationSources.DISPUTER_BALANCE_THRESHOLD: 'DISPUTER_BALANCE'
+        }
+        return notification_source_to_alert[notification_source]
+
+
+def generic_alert(recipients: List[str], from_number: str, msg: str, notification_source: NotificationSources) -> Union[None, str]:
     """Send a text message to the given recipients."""
+
+    env_alert = _map_notification_source_to_environment_alert(notification_source)
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
     send_text_msg(get_twilio_client(), recipients, from_number, msg)
 
 
@@ -70,8 +89,12 @@ def get_twilio_info() -> Tuple[Optional[str], Optional[List[str]]]:
     return twilio_from, phone_numbers.split(",") if phone_numbers is not None else None
 
 
-def dispute_alert(msg: str, recipients: List[str], from_number: str) -> None:
+def dispute_alert(msg: str, recipients: List[str], from_number: str, notification_source: NotificationSources) -> Union[None, str]:
     """send an alert that the dispute was successful to the user"""
+    env_alert = _map_notification_source_to_environment_alert(notification_source)
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
 
     twilio_client = get_twilio_client()
     send_text_msg(twilio_client, recipients, from_number, msg)
@@ -79,7 +102,13 @@ def dispute_alert(msg: str, recipients: List[str], from_number: str) -> None:
     return
 
 
-def alert(all_values: bool, new_report: NewReport, recipients: List[str], from_number: str) -> None:
+def alert(all_values: bool, new_report: NewReport, recipients: List[str], from_number: str, notification_source: NotificationSources) -> Union[None, str]:
+    """Send an alert to the user based on the new report."""
+
+    env_alert = _map_notification_source_to_environment_alert(notification_source)
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
 
     twilio_client = get_twilio_client()
 
@@ -168,12 +197,15 @@ async def handle_notification_service(
     if "sms" in notification_service:
         logger.info(f"Sending SMS message - {notification_source}")
         try:
-            sms_response = sms_message_function()
+            sms_response = sms_message_function(notification_source)
             if sms_response == None:
-                sms_response = "SMS message sent"
+                sms_response = f"SMS message sent - {notification_source}"
+                notification_service_results[notification_source]["error"]["sms"] = None
+            elif isinstance(sms_response, str):
+                sms_response = f"SMS message not sent - {sms_response}"
+                notification_service_results[notification_source]["error"]["sms"] = sms_response
             notification_service_results[notification_source]["sms"] = sms_response
-            notification_service_results[notification_source]["error"]["sms"] = None
-            logger.info("SMS message sent")
+            logger.info(sms_response)
         except Exception as e:
             notification_service_results[notification_source]["error"]["sms"] = e
             logger.error(f"Error sending SMS message: {e}")
