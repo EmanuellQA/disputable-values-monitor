@@ -108,6 +108,8 @@ Reportable = Union[str, bytes, float, int, tuple[Any], None]
 class MonitoredFeed(Base):
     feed: DataFeed[Any]
     threshold: Threshold
+    trusted_val: Optional[Reportable] = None
+    percent_diff: Optional[float] = None
 
     async def is_disputable(
         self,
@@ -167,6 +169,8 @@ class MonitoredFeed(Base):
                     logger.error("Please set a threshold amount to measure percent difference")
                     return None
                 percent_diff: float = (reported_val - trusted_val) / trusted_val
+                self.trusted_val = trusted_val
+                self.percent_diff = float(abs(percent_diff))
                 query_id = self.feed.query.query_id.hex()
                 logger.info(f"""
                     Query ID: {query_id}
@@ -608,6 +612,16 @@ async def parse_new_report_event(
         new_report.removable = removable
         if new_report.removable:
             new_report.status_str = "removable"
+
+        new_report.monitored_feed = {
+            "datafeed_querytag": query_tag,
+            "datafeed_source": monitored_feed.feed.source,
+            "trusted_value": monitored_feed.trusted_val,
+            "percentage_change": monitored_feed.percent_diff,
+            "threshold_amount": monitored_feed.threshold.amount,
+            "threshold_metric": monitored_feed.threshold.metric
+        }
+        
         return new_report
 
     disputable = await monitored_feed.is_disputable(cfg, new_report.value)
