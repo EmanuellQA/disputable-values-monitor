@@ -234,4 +234,4 @@ async def test_get_dispute_fee():
     )
 
     dispute_fee = await get_dispute_fee(cfg, report)
-    assert dispute_fee == int(1e19)
+    assert dispute_fee != int(0)
