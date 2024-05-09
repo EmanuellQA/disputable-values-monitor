@@ -8,3 +8,10 @@ feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types 
     threshold:
       type: Percentage
       amount: {{ threshold_amount }}
+# Managed feeds configuration file
+managed_feeds:
+  - query_id: "managed-feed-queryid"
+    datafeed_query_tag: "managed-feed-querytag"
+    threshold:
+      type: Percentage
+      amount: {{ threshold_amount }}
