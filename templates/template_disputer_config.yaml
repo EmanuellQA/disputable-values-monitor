@@ -8,3 +8,10 @@ feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types 
     threshold:
       type: Percentage
       amount: {{ threshold_amount }}
+# Managed feeds configuration file
+managed_feeds:
+  - query_id: "0x1f984b2c7cbcb7f024e5bdd873d8ca5d64e8696ff219ebede2374bf3217c9b75"
+    datafeed_query_tag: "llpls-usd-spot"
+    threshold:
+      type: Percentage
+      amount: {{ threshold_amount }}
