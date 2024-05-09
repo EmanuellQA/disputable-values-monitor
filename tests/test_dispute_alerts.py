@@ -92,7 +92,7 @@ async def test_notification_services_new_dispute_against_reporter():
             subject=subject,
             msg=msg,
             notification_service=notification_service,
-            sms_message_function=lambda: local_dispute_alert(
+            sms_message_function=lambda x: local_dispute_alert(
                 from_number=from_number,
                 recipients=recipients,
                 msg=msg
