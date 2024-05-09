@@ -10,6 +10,7 @@ from fetch_disputables.alerts import generate_alert_msg
 from fetch_disputables.alerts import get_twilio_client
 from fetch_disputables.alerts import get_twilio_info
 from fetch_disputables.data import NewReport
+from fetch_disputables.utils import NotificationSources
 
 
 def test_notify_typical_disputable(capsys):
@@ -33,7 +34,7 @@ def test_notify_typical_disputable(capsys):
             "status ",
         )
 
-        alert(False, r, "", "")
+        alert(False, r, "", "", NotificationSources.NEW_REPORT)
 
         assert "alert sent" in capsys.readouterr().out
 
@@ -88,11 +89,11 @@ def test_notify_non_disputable(capsys):
             None,
             "status ",
         )
-        alert(True, r, "", "")
+        alert(True, r, "", "", NotificationSources.NEW_REPORT)
 
         assert "alert sent" in capsys.readouterr().out
 
-        alert(False, r, "", "")
+        alert(False, r, "", "", NotificationSources.NEW_REPORT)
 
         assert "second alert sent" not in capsys.readouterr().out
 
@@ -121,10 +122,10 @@ def test_notify_always_alertable_value(capsys):
             None,
             "status ",
         )
-        alert(True, r, "", "")
+        alert(True, r, "", "", NotificationSources.NEW_REPORT)
 
         assert "alert sent" in capsys.readouterr().out
 
-        alert(False, r, "", "")
+        alert(False, r, "", "", NotificationSources.NEW_REPORT)
 
         assert "second alert sent" not in capsys.readouterr().out

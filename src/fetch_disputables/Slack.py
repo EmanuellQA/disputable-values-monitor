@@ -96,6 +96,8 @@ class Slack:
             raise e
 
 class MockSlack():
-    def send_message(self, subject: str, msg: str, new_report: NewReport = None):
+    def send_message(
+        self, subject: str, msg: str, new_report: NewReport = None, notification_source: NotificationSources = None
+    ):
         logger.info("Using mock Slack client.")
         return type('obj', (object,), {'status_code': 200})
