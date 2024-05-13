@@ -2,8 +2,8 @@
 FROM python:3.9
 
 RUN apt-get update && \
-    apt-get install -y vim &&
-    apt-get install awscli -y && apt-get install less -y
+    apt-get install -y vim && \
+    apt-get install -y awscli && apt-get install -y less
     # Set the working directory inside the container
 WORKDIR /app
 
