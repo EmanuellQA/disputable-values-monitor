@@ -265,6 +265,7 @@ class NotificationSources:
     REMOVE_REPORT = "Remove Report"
 
 class EnvironmentAlerts:
+    CRITICAL_DEFAULT = '["DISPUTE_AGAINST_REPORTER", "ALL_REPORTERS_STOP"]'
     HIGH_DEFAULT = '["DISPUTE_AGAINST_REPORTER", "BEGAN_DISPUTE", "REMOVE_REPORT", "ALL_REPORTERS_STOP"]'
     MID_DEFAULT = '["DISPUTABLE_REPORT", "REPORTER_STOP"]'
     LOW_DEFAULT = '["REPORTER_BALANCE", "DISPUTER_BALANCE"]'
@@ -275,6 +276,10 @@ class EnvironmentAlerts:
         mid = EnvironmentAlerts.get_mid_alerts()
         low = EnvironmentAlerts.get_low_alerts()
         return high + mid + low
+    
+    @staticmethod
+    def get_critical_alerts() -> list[str]:
+        return json.loads(os.getenv('CRITICAL_ALERTS', EnvironmentAlerts.CRITICAL_DEFAULT))
     
     @staticmethod
     def get_high_alerts() -> list[str]:
