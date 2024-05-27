@@ -10,6 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import time
 import os
 
 import eth_abi
@@ -60,7 +61,6 @@ class Metrics(Enum):
     Percentage = "percentage"
     Equality = "equality"
     Range = "range"
-
 
 start_block: Dict[int, int] = {}
 disputes_start_block: Dict[int, int] = {}
@@ -141,7 +141,57 @@ class MonitoredFeed(Base):
                 logger.warning(f"Unable to fetch trusted value for EVMCall: {trusted_val}")
                 return None
             trusted_val = HexBytes(trusted_val[0])
+        elif get_query_type(self.feed.query) == "FetchRNG":
 
+            retries = 3
+            while retries > 0:
+                try:
+                    trusted_val, _ = await general_fetch_new_datapoint(self.feed)
+                    if trusted_val is None:
+                        logger.warning(f"FetchRNG could not build trusted value: {trusted_val}")
+                        retries -= 1
+                        time.sleep(20)
+                    else:
+                        retries = 0
+                except Exception as e:
+                    logger.warning(f"FetchRNG could not build trusted value: {trusted_val} {e}")
+                    retries -= 1
+                    time.sleep(20)
+
+            if trusted_val is None:
+                logger.warning(f"Unable to fetch trusted value for FetchRNG: {trusted_val}")
+                return None
+        elif get_query_type(self.feed.query) == "FetchRNGCustom":
+
+            if not isinstance(reported_val, tuple):
+                return True
+
+            timestamp = reported_val[1]
+
+            if not self.feed.source.is_valid_timestamp(timestamp):
+                logger.warning(f"FetchRNGCustom invalid timestamp {timestamp}")
+                return True
+
+            self.feed.source.timestamp = timestamp;
+
+            retries = 3
+            while retries > 0:
+                try:
+                    trusted_val, _ = await general_fetch_new_datapoint(self.feed)
+                    if trusted_val is None:
+                        logger.warning(f"FetchRNGCustom could not build trusted value: {trusted_val}")
+                        retries -= 1
+                        time.sleep(20)
+                    else:
+                        retries = 0
+                except Exception as e:
+                    logger.warning(f"FetchRNGCustom could not build trusted value: {trusted_val} {e}")
+                    retries -= 1
+                    time.sleep(20)
+
+            if trusted_val is None:
+                logger.warning(f"Unable to fetch trusted value for FetchRNGCustom: {trusted_val}")
+                return None
         else:
             trusted_val, _ = await general_fetch_new_datapoint(self.feed)
 
@@ -591,6 +641,12 @@ async def parse_new_report_event(
                 "MimicryNFTMarketIndex",
                 "MimicryMacroMarketMashup",
             ]
+
+            if (os.getenv("DISPUTE_RNG_QUERIES", 'False').lower() in ('true', '1', 't')):
+                auto_types.append("FetchRNG")
+
+            if new_report.query_type == 'FetchRNG':
+                threshold = Threshold(metric=Metrics.Equality, amount=None)
 
             if new_report.query_type not in auto_types:
                 logger.debug(f"Query type {new_report.query_type} doesn't have an auto source to compare value")
