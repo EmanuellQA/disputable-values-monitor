@@ -179,20 +179,24 @@ managed_feeds:
       amount: 0.5
 ```
 
-
 ### FetchRNG and FetchRNGCustom:
 In order to monitor feeds of types FetchRNG and FetchRNGCustom is required to setup the environment variables defined in 
 vars.example.sh
+
+Moreover, to define an FetchRNGCustom feed (managed or not) you can set it up in the disputer-config.yaml or managed-feeds.yaml 
+using "Equality" as a threshold
 
 # RNG Required
 #export ETHERSCAN_API_KEY=
 
 # FetchRNGCustom Required
+#export ETHERSCAN_API_KEY=
 #export INTERVAL=
 #export START_TIME=
 #export FETCH_RNG_NAME=
 
-Additionally, for FetchRNG is required to setup the environment variable DISPUTE_RNG_QUERIES="True" in order to start auto-disputes for these feeds.
+Additionally, for FetchRNG is required to setup the environment variable (in the .env file) DISPUTE_RNG_QUERIES="True" in order to start auto-disputes for these feeds.
+
 
 A managed feed is identified by a `query_id`, it means a report with this queryId will be identified by DVM as a managed feed report. A managed feed report can be marked as a removable or a valid report, it is not marked as disputable.
 
