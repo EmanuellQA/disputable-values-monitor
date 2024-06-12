@@ -1,4 +1,3 @@
 [submodule "telliot-feeds"]
 	path = telliot-feeds
 	url = git@github.com:fetchoracle/telliot-feeds.git
-	branch = fetchrng-support
