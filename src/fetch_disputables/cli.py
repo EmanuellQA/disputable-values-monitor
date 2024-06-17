@@ -440,6 +440,8 @@ async def start(
 
                 logger.debug(f"Found report, hash: {new_report.tx_hash}")
 
+                click.echo(f"New Report found: {new_report.tx_hash}")
+
                 if new_report.reporter in reporters:
                     update_reporter_last_timestamp(
                         reporters_last_timestamp,
@@ -452,13 +454,6 @@ async def start(
                     latest_report["query_id"] = new_report.query_id
                     latest_report["timestamp"] = new_report.submission_timestamp
                     latest_report["initialized"] = True
-    
-                # Refesh
-                clear_console()
-                print_title_info()
-
-                if is_disputing:
-                    click.echo("...Now with auto-disputing!")
 
                 new_report_notification_task = create_async_task(
                     handle_notification_service,
@@ -572,6 +567,10 @@ async def start(
                 df = pd.DataFrame.from_dict(dataframe_state)
                 df = df.sort_values("When")
                 df["Value"] = df["Value"].apply(format_values)
+                clear_console(df)
+                print_title_info()
+                if is_disputing:
+                    click.echo("...Now with auto-disputing!")
                 print(df.to_markdown(index=False), end="\r")
                 df.to_csv("table.csv", mode="a", header=False)
                 # reset config to clear object attributes that were set during loop
