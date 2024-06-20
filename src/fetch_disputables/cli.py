@@ -567,7 +567,7 @@ async def start(
                 df = pd.DataFrame.from_dict(dataframe_state)
                 df = df.sort_values("When")
                 df["Value"] = df["Value"].apply(format_values)
-                clear_console(df)
+                clear_console()
                 print_title_info()
                 if is_disputing:
                     click.echo("...Now with auto-disputing!")
