@@ -199,6 +199,10 @@ team_ses = None
 slack = None
 
 
+if os.getenv('ACTIVATE_TELLIOT_LOG_FILE') is None:
+    logger.info('ACTIVATE_TELLIOT_LOG_FILE not set, setting to default "True"')
+    os.environ['ACTIVATE_TELLIOT_LOG_FILE'] = "True"
+
 def print_title_info() -> None:
     """Prints the title info."""
     click.echo("Disputable Values Monitor 📒🔎📲")
