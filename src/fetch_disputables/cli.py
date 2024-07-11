@@ -198,6 +198,9 @@ ses = None
 team_ses = None
 slack = None
 
+if os.getenv('ACTIVATE_TELLIOT_LOG_FILE') is None:
+    logger.info('ACTIVATE_TELLIOT_LOG_FILE not set, setting to default "True"')
+    os.environ['ACTIVATE_TELLIOT_LOG_FILE'] = "True"
 
 def print_title_info() -> None:
     """Prints the title info."""
@@ -569,10 +572,9 @@ async def start(
                 df["Value"] = df["Value"].apply(format_values)
                 clear_console()
                 print_title_info()
-                if is_disputing:
-                    click.echo("...Now with auto-disputing!")
                 print(df.to_markdown(index=False), end="\r")
                 df.to_csv("table.csv", mode="a", header=False)
+                click.echo("")
                 # reset config to clear object attributes that were set during loop
                 disp_cfg = AutoDisputerConfig()
 
