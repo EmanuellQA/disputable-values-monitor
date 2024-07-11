@@ -574,7 +574,7 @@ async def start(
                 print_title_info()
                 print(df.to_markdown(index=False), end="\r")
                 df.to_csv("table.csv", mode="a", header=False)
-                click.echo("")
+                click.echo("\n")
                 # reset config to clear object attributes that were set during loop
                 disp_cfg = AutoDisputerConfig()
 
