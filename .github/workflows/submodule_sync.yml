@@ -27,7 +27,7 @@ jobs:
           git submodule foreach "\
             if [ -n \"\$(git status --porcelain)\" ]; then \
               git switch -c $CURRENT_TIMESTAMP-submodule-sync && \
-              git commit -am 'submodule sync at $CURRENT_TIMESTAMP' && \
+              git commit -am "submodule sync at $CURRENT_TIMESTAMP" && \
               git push origin $CURRENT_TIMESTAMP-submodule-sync; \
             else \
               echo 'No changes to commit in submodule'; \
@@ -35,7 +35,7 @@ jobs:
           "
           if [ -n "$(git status --porcelain)" ]; then
             git switch -c $CURRENT_TIMESTAMP-submodule-sync
-            git commit -am 'submodule sync at $CURRENT_TIMESTAMP'
+            git commit -am "submodule sync at $CURRENT_TIMESTAMP"
             git push origin $CURRENT_TIMESTAMP-submodule-sync
           else
             echo 'No changes to commit in the main repository'
