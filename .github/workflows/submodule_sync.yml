@@ -19,6 +19,10 @@ jobs:
           CURRENT_TIMESTAMP=$(date +%Y%m%dT%H%M%S)
           echo CURRENT_TIMESTAMP=$CURRENT_TIMESTAMP >> $GITHUB_OUTPUT
           echo $CURRENT_TIMESTAMP
+
+          git config --global user.email "diogo@liquidloans.io"
+          git config --global user.name "dsm-ll"
+          
           git submodule update --remote
           git submodule foreach "\
             git switch -c $CURRENT_TIMESTAMP-submodule-sync && \
