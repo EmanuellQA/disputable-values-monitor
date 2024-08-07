@@ -16,7 +16,8 @@ jobs:
 
       - name: Update submodule
         run: |
-          echo CURRENT_TIMESTAMP=$(date +%Y%m%dT%H:%M:%S) >> $GITHUB_OUTPUT
+          CURRENT_TIMESTAMP=$(date +%Y-%m-%dT%H:%M:%S)
+          echo CURRENT_TIMESTAMP=$CURRENT_TIMESTAMP >> $GITHUB_OUTPUT
           echo $CURRENT_TIMESTAMP
           git submodule update --remote
           git submodule foreach "\
