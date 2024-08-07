@@ -1,0 +1,42 @@
+name: Submodule Sync
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  update-submodule:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.TOKEN_GITHUB }}
+
+      - name: Update submodule
+        run: |
+          CURRENT_TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+          echo CURRENT_TIMESTAMP=$CURRENT_TIMESTAMP >> $GITHUB_OUTPUT
+          echo $CURRENT_TIMESTAMP
+
+          git config --global user.email "diogo@liquidloans.io"
+          git config --global user.name "dsm-ll"
+          
+          git submodule update --remote --recursive
+          git submodule foreach --recursive "\
+            if [ -n \"\$(git status --porcelain)\" ]; then \
+              git switch -c $CURRENT_TIMESTAMP-submodule-sync && \
+              git commit -am "submodule sync at $CURRENT_TIMESTAMP" && \
+              git push origin $CURRENT_TIMESTAMP-submodule-sync; \
+            else \
+              echo 'No changes to commit in submodule'; \
+            fi \
+          "
+          if [ -n "$(git status --porcelain)" ]; then
+            git switch -c $CURRENT_TIMESTAMP-submodule-sync
+            git commit -am "submodule sync at $CURRENT_TIMESTAMP"
+            git push origin $CURRENT_TIMESTAMP-submodule-sync
+          else
+            echo 'No changes to commit in the main repository'
+          fi
