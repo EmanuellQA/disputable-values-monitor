@@ -108,9 +108,10 @@ class ContractMonitor:
             return
 
         logger.info("Starting contract monitor")
+        poll_interval = 30
         while True:
             self.process_contracts()
-            time.sleep(30)
+            time.sleep(poll_interval)
 
     def start(
         self,
