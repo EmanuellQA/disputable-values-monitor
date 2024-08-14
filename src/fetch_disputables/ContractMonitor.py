@@ -81,6 +81,7 @@ class ContractMonitor:
                         """)
                         
                         print("transaction reverted")
+                        self._send_notification(tx_hash, contract_address)
 
     def process_contracts(self):
         rpc_url = self._map_network_id_env_to_rpc_url()
