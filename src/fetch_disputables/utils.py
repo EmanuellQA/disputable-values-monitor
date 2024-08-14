@@ -263,6 +263,7 @@ class NotificationSources:
     REPORTER_BALANCE_THRESHOLD = "Reporter balance threshold"
     DISPUTER_BALANCE_THRESHOLD = "Disputer balance threshold"
     REMOVE_REPORT = "Remove Report"
+    TRANSACTION_REVERTED = "Transaction Reverted"
 
 class EnvironmentAlerts:
     CRITICAL_DEFAULT = '["DISPUTE_AGAINST_REPORTER", "ALL_REPORTERS_STOP"]'
