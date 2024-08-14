@@ -41,12 +41,24 @@ class ContractMonitor:
         return rpc_urls.get(network_id, "https://rpc.pulsechain.com")
 
     async def _send_notification(
-        self, contract_address: str, tx_hash: str, block_number: int
+        self,
+        chain_id: int,
+        rpc: str,
+        contract_address: str,
+        tx_hash: str,
+        block_number: int,
     ):
         from_number, recipients = get_twilio_info()
 
-        subject = f"Transaction {tx_hash} Reverted"
-        msg = f"Transaction {tx_hash} reverted in contract {contract_address} at block {block_number}"
+        subject = f"Transaction {tx_hash} Reverted (ChainID: {chain_id})"
+        msg = f"""
+            Reverted transaction:
+            Chain ID: {chain_id}
+            RPC: {rpc}
+            Contract address: {contract_address}
+            Tx hash: {tx_hash}
+            Block number: {block_number}
+        """
 
         tx_revert_alert_task = create_async_task(
             self.handle_notification_service,
@@ -93,6 +105,8 @@ class ContractMonitor:
                     if receipt["status"] == 0:
                         logger.info(f"""
                             Found reverted transaction:
+                            Chain ID: {w3.eth.chain_id}
+                            RPC: {w3.provider}
                             Contract address: {contract_address}
                             Tx hash: {tx_hash.hex()}
                             Block number: {block_number}
@@ -100,9 +114,11 @@ class ContractMonitor:
                         """)
                         create_async_task(
                             self._send_notification,
-                            contract_address,
-                            tx_hash.hex(),
-                            block_number,
+                            chain_id=w3.eth.chain_id,
+                            rpc=str(w3.provider),
+                            contract_address=contract_address,
+                            tx_hash=tx_hash.hex(),
+                            block_number=block_number,
                         )
 
     async def process_contracts(self):
