@@ -1,5 +1,6 @@
+import asyncio
 import os
-import time
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Union
@@ -8,10 +9,10 @@ import yaml
 from dotenv import load_dotenv
 from web3 import Web3
 
+from .alerts import generic_alert, get_twilio_info
 from .Ses import MockSes, Ses, TeamSes
 from .Slack import MockSlack, Slack
-from .utils import NotificationSources, get_logger
-from .alerts import generic_alert, get_twilio_info
+from .utils import NotificationSources, create_async_task, get_logger
 
 load_dotenv(".env")
 
@@ -38,26 +39,42 @@ class ContractMonitor:
             "943": "https://rpc.v4.testnet.pulsechain.com",
         }
         return rpc_urls.get(network_id, "https://rpc.pulsechain.com")
-    
-    def _send_notification(self, hash: str, contract_address: str):
+
+    async def _send_notification(
+        self, contract_address: str, tx_hash: str, block_number: int
+    ):
         from_number, recipients = get_twilio_info()
 
-        subject = f"Transaction {hash} Reverted"
-        msg = f"Transaction {hash} reverted in contract {contract_address}"
+        subject = f"Transaction {tx_hash} Reverted"
+        msg = f"Transaction {tx_hash} reverted in contract {contract_address} at block {block_number}"
 
-        self.handle_notification_service(
+        tx_revert_alert_task = create_async_task(
+            self.handle_notification_service,
             subject=subject,
             msg=msg,
             notification_service=self.notification_service,
-            sms_message_function=lambda notification_source: generic_alert(from_number=from_number, recipients=recipients, msg=f"{subject}\n{msg}", notification_source=notification_source),
+            sms_message_function=lambda notification_source: generic_alert(
+                from_number=from_number,
+                recipients=recipients,
+                msg=f"{subject}\n{msg}",
+                notification_source=notification_source,
+            ),
             ses=self.ses,
             slack=self.slack,
             team_ses=self.team_ses,
             notification_service_results=self.notification_service_results,
-            notification_source=NotificationSources.TRANSACTION_REVERTED
+            notification_source=NotificationSources.TRANSACTION_REVERTED,
         )
 
-    def process_contract(
+        tx_revert_alert_task.add_done_callback(
+            lambda future_obj, msg_callback=subject: self.notification_task_callback(
+                msg=msg_callback,
+                notification_service_results=self.notification_service_results,
+                notification_source=NotificationSources.REPORTER_BALANCE_THRESHOLD,
+            )
+        )
+
+    async def process_contract(
         self, contract_address: str, w3: Web3, start_block: int, last_block: int
     ):
         for block_number in range(start_block, last_block + 1):
@@ -77,28 +94,37 @@ class ContractMonitor:
                         logger.info(f"""
                             Found reverted transaction:
                             Contract address: {contract_address}
-                            Tx hash: {tx_hash}
+                            Tx hash: {tx_hash.hex()}
+                            Block number: {block_number}
+                            Sending notification...
                         """)
-                        
-                        print("transaction reverted")
-                        self._send_notification(tx_hash, contract_address)
+                        create_async_task(
+                            self._send_notification,
+                            contract_address,
+                            tx_hash.hex(),
+                            block_number,
+                        )
 
-    def process_contracts(self):
+    async def process_contracts(self):
         rpc_url = self._map_network_id_env_to_rpc_url()
         w3 = Web3(Web3.HTTPProvider(rpc_url))
 
         start_block = self.start_block
         last_block = w3.eth.block_number
 
-        print(f"Start block: {start_block}")
-        print(f"Last block: {last_block}")
+        logger.info(f"""
+            Processing contracts:
+            Contracts: {self.contract_addresses}
+            Start block: {start_block}
+            Last block: {last_block}
+        """)
 
         for contract_address in self.contract_addresses:
-            self.process_contract(contract_address, w3, start_block, last_block)
+            await self.process_contract(contract_address, w3, start_block, last_block)
 
         self.start_block = last_block
 
-    def run(self):
+    async def run(self):
         try:
             self._read_contract_monitor_config()
         except Exception as e:
@@ -110,8 +136,11 @@ class ContractMonitor:
         logger.info("Starting contract monitor")
         poll_interval = 30
         while True:
-            self.process_contracts()
-            time.sleep(poll_interval)
+            await self.process_contracts()
+            await asyncio.sleep(poll_interval)
+
+    def start_thread(self):
+        asyncio.run(self.run())
 
     def start(
         self,
@@ -130,7 +159,11 @@ class ContractMonitor:
         self.notification_service_results = notification_service_results
         self.handle_notification_service = handle_notification_service
         self.notification_task_callback = notification_task_callback
-        self.run()
+
+        thread = threading.Thread(
+            target=self.start_thread, daemon=True, name="ContractMonitor"
+        )
+        thread.start()
 
 
 contract_monitor = ContractMonitor()
