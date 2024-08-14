@@ -12,3 +12,6 @@ feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types 
   #   threshold:
   #     type: Percentage
   #     amount: 0.1 # 75%
+dispute_all_feeds:
+  - chain_id: 943
+    query_id: "0x88e6984af423a49262b7d87ef9bc8746ef10def1a819961984e15372b6e1e4ad"

@@ -48,6 +48,7 @@ from fetch_disputables.handle_connect_endpoint import (
     handle_connect_endpoint,
     get_endpoint
 )
+from fetch_disputables.dispute_all import is_query_id_in_dispute_all
 
 from fetch_disputables.utils import Topics
 
@@ -680,7 +681,10 @@ async def parse_new_report_event(
         
         return new_report
 
-    disputable = await monitored_feed.is_disputable(cfg, new_report.value)
+    disputable = (
+        is_query_id_in_dispute_all(new_report.query_id, cfg.main.chain_id)
+        or await monitored_feed.is_disputable(cfg, new_report.value)
+    )
     if disputable is None:
 
         if see_all_values:
