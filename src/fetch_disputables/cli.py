@@ -569,10 +569,9 @@ async def start(
                 df["Value"] = df["Value"].apply(format_values)
                 clear_console()
                 print_title_info()
-                if is_disputing:
-                    click.echo("...Now with auto-disputing!")
                 print(df.to_markdown(index=False), end="\r")
                 df.to_csv("table.csv", mode="a", header=False)
+                click.echo("\n")
                 # reset config to clear object attributes that were set during loop
                 disp_cfg = AutoDisputerConfig()
 
