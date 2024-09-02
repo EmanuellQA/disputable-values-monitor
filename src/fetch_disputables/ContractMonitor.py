@@ -96,8 +96,8 @@ class ContractMonitor:
                 to_address = tx["to"]
 
                 if (
-                    from_address.lower() == contract_address.lower()
-                    or to_address.lower() == contract_address.lower()
+                    from_address is not None and from_address.lower() == contract_address.lower()
+                    or to_address is not None and to_address.lower() == contract_address.lower()
                 ):
                     tx_hash = tx["hash"]
                     receipt = w3.eth.get_transaction_receipt(tx_hash)
