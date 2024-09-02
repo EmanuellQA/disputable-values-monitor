@@ -110,6 +110,7 @@ class MonitoredFeed(Base):
     threshold: Threshold
     trusted_val: Optional[Reportable] = None
     percent_diff: Optional[float] = None
+    datafeed_query_tag: Optional[str] = None
 
     async def is_disputable(
         self,
@@ -246,6 +247,15 @@ class MonitoredFeed(Base):
                 return range_ >= self.threshold.amount
 
             elif self.threshold.metric == Metrics.Equality:
+                logger.debug(f"""
+                    Using equality metric with datafeed:
+                    DataFeed: {self.feed}
+                    Query ID: {self.feed.query.query_id.hex()}
+                    Trusted Value: {trusted_val}
+                    Reported Value: {reported_val}
+                    Trusted Value == Reported Value: {trusted_val == reported_val}
+                    Disputable: {trusted_val != reported_val}         
+                """)
 
                 # if we have two bytes strings (not raw bytes)
                 if (
@@ -581,6 +591,12 @@ async def parse_new_report_event(
             logger.error(f"Error while assembling query id for {mf.feed.query.descriptor}: {e}")
             feed_qid = None
 
+        try:
+            feed_qtag = mf.datafeed_query_tag
+        except Exception as e:
+            logger.error(f"Error while assembling query tag for {mf}: {e}")
+            feed_qtag = None
+
         if feed_qid is None:
             if get_query_type(mf.feed.query) == new_report.query_type:
                 # for generic queries the query params are None
@@ -595,7 +611,7 @@ async def parse_new_report_event(
         if feed_qid == new_report.query_id:
             if new_report.query_type == "SpotPrice":
                 catalog_entry = query_catalog.find(query_id=new_report.query_id)
-                query_tag = catalog_entry[0].tag
+                query_tag = catalog_entry[0].tag if feed_qtag is None else feed_qtag
                 mf.feed = CATALOG_FEEDS.get(query_tag)
 
             else:

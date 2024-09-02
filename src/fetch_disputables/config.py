@@ -109,7 +109,19 @@ class AutoDisputerConfig:
                 logging.error(f"Unsupported threshold: {threshold}\n")
                 return None
 
-            monitored_feeds.append(MonitoredFeed(datafeed, threshold))
+            datafeed_query_tag = None
+            try:
+                if hasattr(self.box.feeds[i], "datafeed_query_tag"):
+                    datafeed_query_tag = self.box.feeds[i].datafeed_query_tag
+            except AttributeError as e:
+                logging.error(f"Python Box attribute error: {e}")
+            except TypeError as e:
+                logging.error(f"Python Box attribute error: {e}")
+            except Exception as e:
+                logging.error(f"Error configuring datafeed_query_tag: {e}")
+            monitored_feeds.append(MonitoredFeed(
+                feed=datafeed, threshold=threshold, datafeed_query_tag=datafeed_query_tag
+            ))
 
         return monitored_feeds
 
