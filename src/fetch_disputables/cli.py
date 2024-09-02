@@ -46,6 +46,7 @@ from fetch_disputables.data import get_fetch_balance, get_pls_balance
 from fetch_disputables.utils import NotificationSources
 from fetch_disputables.remove_report import remove_report
 from fetch_disputables.ManagedFeeds import ManagedFeeds
+from fetch_disputables.ContractMonitor import contract_monitor
 
 from dotenv import load_dotenv
 load_dotenv('.env')
@@ -137,6 +138,18 @@ notification_service_results: dict = {
         }
     },
     NotificationSources.REMOVE_REPORT: {
+        "sms": None,
+        "email": None,
+        "slack": None,
+        "team_email": None,
+        "error": {
+            "sms": None,
+            "email": None,
+            "slack": None,
+            "team_email": None,
+        }
+    },
+    NotificationSources.TRANSACTION_REVERTED: {
         "sms": None,
         "email": None,
         "slack": None,
@@ -247,6 +260,16 @@ async def main(all_values: bool, wait: int, account_name: str, is_disputing: boo
 
     if "slack" in notification_service:
         slack = MockSlack() if os.getenv("MOCK_SLACK", "true") == "true" else Slack(all_values)
+
+    contract_monitor.start(
+        ses=ses,
+        team_ses=team_ses,
+        slack=slack,
+        notification_service=notification_service,
+        notification_service_results=notification_service_results,
+        handle_notification_service=handle_notification_service,
+        notification_task_callback=notification_task_callback
+    )
 
     await start(
         all_values=all_values,

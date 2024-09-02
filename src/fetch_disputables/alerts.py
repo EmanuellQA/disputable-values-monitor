@@ -67,7 +67,8 @@ def _map_notification_source_to_environment_alert(notification_source: Notificat
             NotificationSources.NEW_REPORT: 'DISPUTABLE_REPORT',
             NotificationSources.REPORTER_STOP_REPORTING: 'REPORTER_STOP',
             NotificationSources.REPORTER_BALANCE_THRESHOLD: 'REPORTER_BALANCE',
-            NotificationSources.DISPUTER_BALANCE_THRESHOLD: 'DISPUTER_BALANCE'
+            NotificationSources.DISPUTER_BALANCE_THRESHOLD: 'DISPUTER_BALANCE',
+            NotificationSources.TRANSACTION_REVERTED: 'TRANSACTION_REVERTED'
         }
         return notification_source_to_alert[notification_source]
 
