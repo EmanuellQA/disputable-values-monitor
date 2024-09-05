@@ -1,5 +1,5 @@
 # AutoDisputer configuration file
-feeds: # please reference https://github.com/fetch-io/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
+feeds: # please reference https://github.com/fetchoracle/dataSpecs/tree/main/types for examples of QueryTypes w/ Query Parameters
   - query_id: "0x83245f6a6a2f6458558a706270fbcc35ac3a81917602c1313d3bfa998dcc2d4b"
     threshold:
       type: Percentage
