@@ -4,6 +4,7 @@ import warnings
 from time import sleep
 from decimal import *
 from datetime import datetime
+from dataclasses import replace
 
 import os
 
@@ -483,7 +484,7 @@ async def start(
                     subject=f"DVM ALERT ({os.getenv('ENV_NAME', 'default')}) - New Report",
                     msg=format_new_report_message(new_report),
                     notification_service=notification_service,
-                    sms_message_function=lambda notification_source: alert(all_values, new_report, recipients, from_number, notification_source),
+                    sms_message_function=lambda notification_source: alert(all_values, replace(new_report), recipients, from_number, notification_source),
                     ses=ses,
                     slack=slack,
                     new_report=new_report,
@@ -537,7 +538,7 @@ async def start(
                                 f"{format_new_report_message(new_report)}"
                             ),
                             notification_service=notification_service,
-                            sms_message_function=lambda notification_source: alert(all_values, new_report, recipients, from_number, notification_source),
+                            sms_message_function=lambda notification_source: alert(all_values, replace(new_report), recipients, from_number, notification_source),
                             ses=ses,
                             slack=slack,
                             notification_service_results=notification_service_results,
