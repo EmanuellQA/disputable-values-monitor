@@ -77,9 +77,9 @@ def generic_alert(recipients: List[str], from_number: str, msg: str, notificatio
     """Send a text message to the given recipients."""
 
     env_alert = _map_notification_source_to_environment_alert(notification_source)
-    critical_alerts = EnvironmentAlerts.get_critical_alerts()
-    if env_alert not in critical_alerts:
-        return f"{env_alert} not in critical alerts"
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
     send_text_msg(get_twilio_client(), recipients, from_number, msg)
 
 
@@ -93,9 +93,9 @@ def get_twilio_info() -> Tuple[Optional[str], Optional[List[str]]]:
 def dispute_alert(msg: str, recipients: List[str], from_number: str, notification_source: NotificationSources) -> Union[None, str]:
     """send an alert that the dispute was successful to the user"""
     env_alert = _map_notification_source_to_environment_alert(notification_source)
-    critical_alerts = EnvironmentAlerts.get_critical_alerts()
-    if env_alert not in critical_alerts:
-        return f"{env_alert} not in critical alerts"
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
 
     twilio_client = get_twilio_client()
     send_text_msg(twilio_client, recipients, from_number, msg)
@@ -107,9 +107,9 @@ def alert(all_values: bool, new_report: NewReport, recipients: List[str], from_n
     """Send an alert to the user based on the new report."""
 
     env_alert = _map_notification_source_to_environment_alert(notification_source)
-    critical_alerts = EnvironmentAlerts.get_critical_alerts()
-    if env_alert not in critical_alerts:
-        return f"{env_alert} not in critical alerts"
+    high_alerts = EnvironmentAlerts.get_high_alerts()
+    if env_alert not in high_alerts:
+        return f"{env_alert} not in high alerts"
 
     twilio_client = get_twilio_client()
 
