@@ -185,7 +185,7 @@ async def handle_notification_service(
     notification_service_results: Union[dict, None] = None,
     notification_source: Union[NotificationSources, None] = None,
 ) -> List[str]:
-    if team_ses != None:
+    if team_ses != None and "email" in notification_service:
         logger.info(f"Sending team email - {notification_source}")
         try:
             notification_service_results[notification_source]["team_email"] = team_ses.send_email(subject=subject, msg=msg)
