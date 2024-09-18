@@ -303,8 +303,7 @@ async def start(
         logger.warning("TWILIO environment variables not configured")
 
     if not disp_cfg.monitored_feeds:
-        logger.error("No feeds set for monitoring, please add feeds to ./disputer-config.yaml")
-        return
+        logger.warning("No feeds set for monitoring, please add feeds to ./disputer-config.yaml")
 
     account: ChainedAccount = select_account(cfg, account_name)
 

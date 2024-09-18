@@ -1,9 +1,9 @@
 """contains AutoDisputerConfig class for adjusting the settings of the auto-disputer"""
-import logging
 from dataclasses import dataclass
 from typing import Any
 from typing import List
 from typing import Optional
+from pathlib import Path
 
 import yaml
 from box import Box
@@ -31,13 +31,19 @@ class AutoDisputerConfig:
             with open("disputer-config.yaml", "r") as f:
                 self.box = Box(yaml.safe_load(f))
         except (yaml.parser.ParserError, yaml.scanner.ScannerError) as e:
-            logging.error(f"YAML file error: {e}")
+            logger.error(f"YAML file error: {e}")
             return
         except AttributeError as e:
-            logging.error(f"Python Box object error: {e}")
+            logger.error(f"Python Box object error: {e}")
             return
         except KeyError as e:
-            logging.error(f"Dictionary-style indexing error: {e}")
+            logger.error(f"Dictionary-style indexing error: {e}")
+            return
+        except FileNotFoundError as e:
+            self.monitored_feeds = []
+            return
+        except Exception as e:
+            logger.error(f"Error reading disputer-config.yaml: {e}")
             return
 
         self.monitored_feeds = self.build_monitored_feeds_from_yaml()
@@ -98,15 +104,15 @@ class AutoDisputerConfig:
                     else:
                         threshold_amount = self.box.feeds[i].threshold.amount
                 except AttributeError as e:
-                    logging.error(f"Python Box attribute error: {e}")
+                    logger.error(f"Python Box attribute error: {e}")
                     return None
                 except TypeError as e:
-                    logging.error(f"Python Box attribute error: {e}")
+                    logger.error(f"Python Box attribute error: {e}")
                     return None
 
                 threshold: Threshold = Threshold(Metrics[threshold_type], amount=threshold_amount)
             except KeyError:
-                logging.error(f"Unsupported threshold: {threshold}\n")
+                logger.error(f"Unsupported threshold: {threshold}\n")
                 return None
 
             datafeed_query_tag = None
@@ -114,11 +120,11 @@ class AutoDisputerConfig:
                 if hasattr(self.box.feeds[i], "datafeed_query_tag"):
                     datafeed_query_tag = self.box.feeds[i].datafeed_query_tag
             except AttributeError as e:
-                logging.error(f"Python Box attribute error: {e}")
+                logger.error(f"Python Box attribute error: {e}")
             except TypeError as e:
-                logging.error(f"Python Box attribute error: {e}")
+                logger.error(f"Python Box attribute error: {e}")
             except Exception as e:
-                logging.error(f"Error configuring datafeed_query_tag: {e}")
+                logger.error(f"Error configuring datafeed_query_tag: {e}")
             monitored_feeds.append(MonitoredFeed(
                 feed=datafeed, threshold=threshold, datafeed_query_tag=datafeed_query_tag
             ))
